@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en-us">
+    <head>
+        
+
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Helm3-secrets on KMS</title>
+        
+        <style>
+
+    html body {
+        font-family: 'Raleway', sans-serif;
+        background-color: white;
+    }
+
+    :root {
+        --accent: red;
+        --border-width:  5px ;
+    }
+
+</style>
+
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Raleway">
+
+
+ <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css"> 
+
+
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+
+
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
+ 
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+    
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/languages/go.min.js"></script>
+    
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/languages/haskell.min.js"></script>
+    
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/languages/kotlin.min.js"></script>
+    
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/languages/scala.min.js"></script>
+    
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/languages/swift.min.js"></script>
+    
+    <script>hljs.initHighlightingOnLoad();</script>
+
+
+
+
+
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+
+
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+
+
+<script>$(document).on('click', function() { $('.collapse').collapse('hide'); })</script>
+ <meta name="generator" content="Hugo 0.70.0" />
+        
+
+        
+
+        
+            <script type="text/javascript" async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+        
+
+        
+
+    </head>
+
+    <body>
+        
+
+        <nav class="navbar navbar-default navbar-fixed-top">
+            <div class="container">
+                <div class="navbar-header">
+                    <a class="navbar-brand visible-xs" href="#">Helm3-secrets on KMS</a>
+                    <button class="navbar-toggle" data-target=".navbar-collapse" data-toggle="collapse">
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                    </button>
+                </div>
+                <div class="collapse navbar-collapse">
+                    
+                        <ul class="nav navbar-nav">
+                            
+                                <li><a href="/">Home</a></li>
+                            
+                                <li><a href="/about/">About</a></li>
+                            
+                                <li><a href="/posts/">Posts</a></li>
+                            
+                                <li><a href="/projects/">Projects</a></li>
+                            
+                        </ul>
+                    
+                    
+                        <ul class="nav navbar-nav navbar-right">
+                            
+                                <li class="navbar-icon"><a href="mailto:me@example.com"><i class="fa fa-envelope-o"></i></a></li>
+                            
+                                <li class="navbar-icon"><a href="https://github.com/username/"><i class="fa fa-github"></i></a></li>
+                            
+                                <li class="navbar-icon"><a href="https://twitter.com/username/"><i class="fa fa-twitter"></i></a></li>
+                            
+                                <li class="navbar-icon"><a href="https://www.linkedin.com/in/username/"><i class="fa fa-linkedin"></i></a></li>
+                            
+                                <li class="navbar-icon"><a href="https://www.stackoverflow.com/username/"><i class="fa fa-stack-overflow"></i></a></li>
+                            
+                        </ul>
+                    
+                </div>
+            </div>
+        </nav>
+
+
+<main>
+
+    <div>
+        <h2>Helm3-secrets on KMS</h2>
+        <h5></h5>
+        
+<a href="/tags/helm"><kbd class="item-tag">helm</kbd></a>
+
+<a href="/tags/kubernetes"><kbd class="item-tag">kubernetes</kbd></a>
+
+<a href="/tags/helm-secrets"><kbd class="item-tag">helm-secrets</kbd></a>
+
+
+    </div>
+
+    <div align="start" class="content"><h1 id="setup--prerequisites">Setup / Prerequisites</h1>
+<ul>
+<li>A working Kubenetes (GKE)</li>
+<li>Helm3</li>
+<li>KMS Permissions</li>
+<li>Sops (<a href="https://github.com/mozilla/sops/">https://github.com/mozilla/sops/</a>)</li>
+</ul>
+<h1 id="lets-do-it">Let&rsquo;s Do it!</h1>
+<h2 id="key-generation">Key Generation</h2>
+<p>First off you need to create a user in IAM with permissions (KMS Admin), and setup gcloud with this user
+After this, create a key ring and keys with the following comands:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">   gcloud kms keyrings create helm <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>    --location us-west1
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">   gcloud kms keys create helm-secrets <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>    --location us-west1 <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>    --keyring helm <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>    --purpose <span style="color:#e6db74">&#34;encryption&#34;</span>
+    --rotation-period <span style="color:#e6db74">&#34;90d&#34;</span> <span style="color:#ae81ff">\
+</span><span style="color:#ae81ff"></span>    --next-rotation-time <span style="color:#e6db74">&#34;2020-05-30T01:00:00&#34;</span>
+</code></pre></div><p>This will create a key ring named <code>helm</code> with a key called <code>helm-secrets</code> in <code>us-west1</code> with a 90 day rotation
+period starting on May 30th 2020.</p>
+<p>Copy the resource ID for this as shown</p>
+<blockquote>
+<p><img src="/images/kms-key.png" alt="KMS_RESOURCE_ID"></p>
+</blockquote>
+<h2 id="link-to-helm-chart">Link To Helm Chart</h2>
+<p>Create a helm chart or use an existing helm chart and create a file called <code>.sops.yaml</code> at the root of the
+chart alongside <code>Chart.yaml</code> with the following content:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#75715e"># Encrypt using GCP KMS</span>
+<span style="color:#66d9ef">creation_rules</span>:
+  - <span style="color:#66d9ef">gcp_kms</span>: projects/xxxxxx/locations/global/keyRings/helm/cryptoKeys/helm-secrets
+</code></pre></div><p>I&rsquo;ve commented out with <code>xxxxxx</code> where your actual project name will be.</p>
+<h2 id="templates-and-values">Templates and Values</h2>
+<p>Create a file called <code>secrets.demo.yaml</code> it can be called anything really, the prefix has to be <code>secrets</code> or
+else helm secrets will not pick it up. In this file we will store what we want to encrypt.</p>
+<h4 id="secretsdemoyaml"><em><strong><code>secrets.demo.yaml</code></strong></em></h4>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#66d9ef">app</span>:
+  <span style="color:#66d9ef">secrets</span>: <span style="color:#e6db74">&#34;Value to Encrypt&#34;</span>
+</code></pre></div><p>Again the structure doesn&rsquo;t matter, it could be anything,</p>
+<p>Go to <code>templates/deployment.yaml</code> or wherever you want the target secret to be replaced and add reference it</p>
+<h4 id="templatesdeploymentyaml"><em><strong><code>templates/deployment..yaml</code></strong></em></h4>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#66d9ef">apiVersion</span>: apps/v1
+<span style="color:#66d9ef">kind</span>: Deployment
+<span style="color:#66d9ef">metadata</span>:
+  <span style="color:#66d9ef">name</span>: nginx-deployment
+  <span style="color:#66d9ef">labels</span>:
+    <span style="color:#66d9ef">app</span>: nginx
+    <span style="color:#66d9ef">encrypted</span>: {{ .Values.app.secrets | quote }}
+<span style="color:#66d9ef">spec</span>:
+  <span style="color:#66d9ef">replicas</span>: <span style="color:#ae81ff">3</span>
+  <span style="color:#66d9ef">selector</span>:
+    <span style="color:#66d9ef">matchLabels</span>:
+      <span style="color:#66d9ef">app</span>: nginx
+  <span style="color:#66d9ef">template</span>:
+    <span style="color:#66d9ef">metadata</span>:
+      <span style="color:#66d9ef">labels</span>:
+        <span style="color:#66d9ef">app</span>: nginx
+    <span style="color:#66d9ef">spec</span>:
+      <span style="color:#66d9ef">containers</span>:
+      - <span style="color:#66d9ef">name</span>: nginx
+        <span style="color:#66d9ef">image</span>: nginx:<span style="color:#ae81ff">1.14.2</span>
+        <span style="color:#66d9ef">ports</span>:
+        - <span style="color:#66d9ef">containerPort</span>: <span style="color:#ae81ff">80</span>
+
+</code></pre></div><p>Now Run</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">helm template chart-name chart-location -f secrets.demo.yaml
+</code></pre></div><p>And it should render the template</p>
+<h4 id="templatesdeploymentyaml-1"><em><strong><code>templates/deployment..yaml</code></strong></em></h4>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#66d9ef">apiVersion</span>: apps/v1
+<span style="color:#66d9ef">kind</span>: Deployment
+<span style="color:#66d9ef">metadata</span>:
+  <span style="color:#66d9ef">name</span>: nginx-deployment
+  <span style="color:#66d9ef">labels</span>:
+    <span style="color:#66d9ef">app</span>: nginx
+    <span style="color:#66d9ef">encrypted</span>: <span style="color:#e6db74">&#34;Value to Encrypt&#34;</span>
+<span style="color:#66d9ef">spec</span>:
+  <span style="color:#66d9ef">replicas</span>: <span style="color:#ae81ff">3</span>
+  <span style="color:#66d9ef">selector</span>:
+    <span style="color:#66d9ef">matchLabels</span>:
+      <span style="color:#66d9ef">app</span>: nginx
+  <span style="color:#66d9ef">template</span>:
+    <span style="color:#66d9ef">metadata</span>:
+      <span style="color:#66d9ef">labels</span>:
+        <span style="color:#66d9ef">app</span>: nginx
+    <span style="color:#66d9ef">spec</span>:
+      <span style="color:#66d9ef">containers</span>:
+      - <span style="color:#66d9ef">name</span>: nginx
+        <span style="color:#66d9ef">image</span>: nginx:<span style="color:#ae81ff">1.14.2</span>
+        <span style="color:#66d9ef">ports</span>:
+        - <span style="color:#66d9ef">containerPort</span>: <span style="color:#ae81ff">80</span>
+
+</code></pre></div><p>This will render the template as is, without encryption and it is a good way to test if the reference worked
+as expected. Next we will encrypt the <code>secrets.demo.yaml</code> file.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">helm secrets enc secrets.demo.yaml
+</code></pre></div><p>This will encrypt the file and replace its content with the following:</p>
+<h4 id="secretsdemoyaml-1"><em><strong><code>secrets.demo.yaml</code></strong></em></h4>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#66d9ef">app</span>:
+    <span style="color:#66d9ef">secrets</span>: ENC[AES256_GCM,data:+gXuG4f4TM1VabCmXQ22rXfb9Pz3TLckC93xKjk=,iv:En+bDZToV86yt+AqeDWT+0Ptk7Blk+abMWu3kNL7mYs=,tag:luoLiMSOkl3QsggDABVMIA==,type:str]
+<span style="color:#66d9ef">sops</span>:
+    <span style="color:#66d9ef">kms</span>: []
+    <span style="color:#66d9ef">gcp_kms</span>:
+    -   <span style="color:#66d9ef">resource_id</span>: projects/xxxxx/locations/global/keyRings/helm/cryptoKeys/helm-secrets
+        <span style="color:#66d9ef">created_at</span>: <span style="color:#e6db74">&#39;2020-05-22T15:28:27Z&#39;</span>
+        <span style="color:#66d9ef">enc</span>: CiQAxAaw3VxeE7UMLvfGc2W+qjk8nD5jGdXuJ3hphDYn1jSdxAUSSQCup/5ARkNCwl2h7U/jU4o0HY07GqUSQ/<span style="color:#ae81ff">4</span>+Ozwkw6J3WqplWUM2/cedWnaEYK6CtdXcTUZ3t/X/YxXtzP9Qpsv9maxcreDe59s=
+    <span style="color:#66d9ef">lastmodified</span>: <span style="color:#e6db74">&#39;xxxxxx&#39;</span>
+    <span style="color:#66d9ef">mac</span>: ENC[AES256_GCM,data:PR11ZihONBjJBtT77ERoFlg9LSGwU7r93kVZUuO3oNU2EwWc1B+K7aYZuDWt0TmnFzcY47kDylpx8rQZMpH1hFkHxzI9ayKW9waCzZWYBleoB0wsdxa2t2JyoeRrCf++1qurLQgOoFTQ+AR27a1eoo+ifP/jFP256l2VRqJOVLc=,iv:VWkUzzcQZ/vAViA9HzvzUAyayJMDmTxjVAkW0XOfOXA=,tag:8gg73udDzcSeZWQyvjZYAg==,type:str]
+    <span style="color:#66d9ef">pgp</span>: []
+    <span style="color:#66d9ef">unencrypted_suffix</span>: _unencrypted
+    <span style="color:#66d9ef">version</span>: <span style="color:#ae81ff">3.0.3</span>
+</code></pre></div><p>As you can see the attributes in this file have been encrypted, we did one but every attribute in the targeted
+file will be encrypted, that&rsquo;s why it needs to be a separate file, since only secret values in this file need
+to be encrypted not every other attribute such as <code>replicaCount</code>, <code>name</code> etc.</p>
+<p>And to verify that it works as expected you should see the same <code>helm template</code> output as before but now with
+an encrypted file!</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">helm secrets template chart-name chart-location -f secrets.demo.yaml
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">helm secrets install chart-name chart-location -f secrets.demo.yaml 
+</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">helm secrets upgrade chart-name chart-location -f secrets.demo.yaml 
+</code></pre></div></div>
+
+</main>
+
+        <footer>
+            <p class="copyright text-muted">© All rights reserved. Powered by <a href="https://gohugo.io">Hugo</a> and <a href="https://github.com/calintat/minimal">Minimal</a>.</p>
+        </footer>
+
+        
+
+        
+    </body>
+
+</html>
+

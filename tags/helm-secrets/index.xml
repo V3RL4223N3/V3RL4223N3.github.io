@@ -1,24 +1,15 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>Cloudware</title>
-    <link>/</link>
-    <description>Recent content on Cloudware</description>
+    <title>helm-secrets on Cloudware</title>
+    <link>/tags/helm-secrets/</link>
+    <description>Recent content in helm-secrets on Cloudware</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
     <lastBuildDate>Fri, 22 May 2020 00:00:00 +0000</lastBuildDate>
     
-	<atom:link href="/index.xml" rel="self" type="application/rss+xml" />
+	<atom:link href="/tags/helm-secrets/index.xml" rel="self" type="application/rss+xml" />
     
-    
-    <item>
-      <title>Android Memory Forensics</title>
-      <link>/projects/android-memory-analysis/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>/projects/android-memory-analysis/</guid>
-      <description>Objectives  Learn Volatility Learn LiME Compile Android 10 Kernel Dump Memory on an Android Devices to see if data can be plucked from RAM using LiME Read dumped Memory using the Volatility Framework  Setup  LiME (https://github.com/504ensicsLabs/LiME) Android Kernel (https://source.android.com/setup/build/building-kernels) Volatility Framework (https://github.com/volatilityfoundation/volatility)  Introduction The Plan    </description>
-    </item>
     
     <item>
       <title>Helm3-secrets on KMS</title>
@@ -28,16 +19,6 @@
       <guid>/posts/helm3-secrets/</guid>
       <description>Setup / Prerequisites  A working Kubenetes (GKE) Helm3 KMS Permissions Sops (https://github.com/mozilla/sops/)  Let&amp;rsquo;s Do it! Key Generation First off you need to create a user in IAM with permissions (KMS Admin), and setup gcloud with this user After this, create a key ring and keys with the following comands:
 gcloud kms keyrings create helm \  --location us-west1 gcloud kms keys create helm-secrets \  --location us-west1 \  --keyring helm \  --purpose &amp;#34;encryption&amp;#34; --rotation-period &amp;#34;90d&amp;#34; \  --next-rotation-time &amp;#34;2020-05-30T01:00:00&amp;#34; This will create a key ring named helm with a key called helm-secrets in us-west1 with a 90 day rotation period starting on May 30th 2020.</description>
-    </item>
-    
-    <item>
-      <title></title>
-      <link>/about/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>/about/</guid>
-      <description>#Who Am I?
-Daniel Tapia</description>
     </item>
     
   </channel>
