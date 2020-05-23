@@ -256,7 +256,9 @@ to be encrypted not every other attribute such as <code>replicaCount</code>, <co
 <p>And to verify that it works as expected you should see the same <code>helm template</code> output as before but now with
 an encrypted file!</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">helm secrets template chart-name chart-location -f secrets.demo.yaml
-</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">helm secrets install chart-name chart-location -f secrets.demo.yaml 
+</code></pre></div><p>You can then later just run <code>helm secrets install</code> or <code>helm secrets upgrade</code> to upgrade your chart without
+having to decrypt the <code>secrets.demo.yaml</code> file seamlessly.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">helm secrets install chart-name chart-location -f secrets.demo.yaml 
 </code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">helm secrets upgrade chart-name chart-location -f secrets.demo.yaml 
 </code></pre></div></div>
 
