@@ -17,7 +17,7 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>/projects/android-memory-analysis/</guid>
-      <description>Objectives  Learn Volatility Learn LiME Compile Android 10 Kernel Dump Memory on an Android Devices to see if data can be plucked from RAM using LiME Read dumped Memory using the Volatility Framework  Setup  LiME (https://github.com/504ensicsLabs/LiME) Android Kernel (https://source.android.com/setup/build/building-kernels) Volatility Framework (https://github.com/volatilityfoundation/volatility)  Introduction The Plan    </description>
+      <description>Objectives  Learn Volatility Learn LiME Compile Android 10 Kernel Dump Memory on an Android Devices to see if data can be plucked from RAM using LiME Read dumped Memory using the Volatility Framework  Setup  LiME (https://github.com/504ensicsLabs/LiME) Android Kernel (https://source.android.com/setup/build/building-kernels) Volatility Framework (https://github.com/volatilityfoundation/volatility)  Introduction In order to get a snapshot of memory image, we need a tool for this, I have chosen LiME since it was developed exactly for this purpose in android devices.</description>
     </item>
     
     <item>
@@ -37,7 +37,18 @@ gcloud kms keyrings create helm \  --location us-west1 gcloud kms keys create he
       
       <guid>/about/</guid>
       <description>#Who Am I?
-I am a Chilean Software Engineer turned Devops Engineer, although I code by day I attempt to do security research in whatever peaks my interest, usually these days it is forensics and android, but I am hoping to shift gears to Kubernetes Security sometime in the future. This blog serves as my attempt to document whatever the hell I&amp;rsquo;m up to.</description>
+I am a Chilean Software Engineer turned Devops Engineer, although I code by day I attempt to do security research by night in whatever peaks my interest, usually these days its forensics and android, but I am hoping to shift gears to Kubernetes Security sometime in the future. This blog serves as my attempt to document whatever the hell I&amp;rsquo;m up to.
+I wrote my thesis on android reverse engineering when graduating from UTFSM in Chile, it was a fun experience that brought me closer to the security world, today I&amp;rsquo;m working as a Kubernetes Engieer and trying to absorb the knoweledge from that world and figure out some way to apply it to security.</description>
+    </item>
+    
+    <item>
+      <title>Reverse Engineering Android Applications and Threat Intelligence</title>
+      <link>/projects/reverse-engineering-android-apps/</link>
+      <pubDate>Mon, 05 Jun 2017 00:00:00 +0000</pubDate>
+      
+      <guid>/projects/reverse-engineering-android-apps/</guid>
+      <description>Introduction This was my graduate thesis, in which I reversed engineered and android APK application, to then use a metasploit payload to launch malware from the infected app and then proceeded to attempt anti virus evasion.
+I go through the android permission model, applicaiton settings and how app signing works. An overview of ARM architecture, to move on to a list of tools I used to reverse engineer, including Metasploit and APKTool.</description>
     </item>
     
   </channel>

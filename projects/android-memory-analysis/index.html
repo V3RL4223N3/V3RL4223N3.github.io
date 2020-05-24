@@ -156,11 +156,162 @@
 <li>Volatility Framework (<a href="https://github.com/volatilityfoundation/volatility">https://github.com/volatilityfoundation/volatility</a>)</li>
 </ul>
 <h1 id="introduction">Introduction</h1>
+<p>In order to get a snapshot of memory image, we need a tool for this, I have chosen <code>LiME</code> since it was
+developed exactly for this purpose in android devices. The way LiME works is it compiles on the system to
+generate a kernel module that is then loaded by the target system that we are targeting for extraction. In
+android this is a bit more complex since android doesn&rsquo;t have the tools necessary to compile on the phone, so
+cross compilation will be necessary, and for this, the kernel source code for the target phone is necessary so
+we can build the kernel module against the kernel source code. For this project I&rsquo;m using a Pixel 3XL and
+it currenlty has a Android 10 as an operating system. In order to load a kernel module, rooting of the target
+phone is required</p>
+<ul>
+<li>Pixel 3XL</li>
+</ul>
 <h1 id="the-plan">The Plan</h1>
 <ul>
+<li>Get Magisk (<a href="https://www.xda-developers.com/how-to-install-magisk/">https://www.xda-developers.com/how-to-install-magisk/</a>)</li>
+<li>Root Pixel 3XL</li>
+<li>Setup ADB</li>
+<li>Setup SDK and  NDK</li>
+<li>Build Kernel Source Code</li>
 <li></li>
 </ul>
-</div>
+<h2 id="setup-adb">Setup ADB</h2>
+<p>Download ADB (<a href="https://dl.google.com/android/repository/platform-tools-latest-linux.zip">https://dl.google.com/android/repository/platform-tools-latest-linux.zip</a>) and unzip in <code>/op/adb</code>
+Add <code>/opt/adb/</code> to PATH</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">export PATH<span style="color:#f92672">=</span>$PATH:/opt/adb
+</code></pre></div><h2 id="setup-sdk-and-ndk">Setup SDK and NDK</h2>
+<p>Download Android Studio (<a href="https://developer.android.com/studio),">https://developer.android.com/studio),</a> I downloded it and extracted it to
+<code>/opt/android-studio</code>, then run it and install SDK for the android version you want to work on and the android
+tools such as NDK.</p>
+<blockquote>
+<p><img src="/images/install-android-sdk.png" alt="ANDROID_INSTALL_SDK"></p>
+</blockquote>
+<blockquote>
+<p><img src="/images/sdk-tools-android.png" alt="ANDROID_INSTALL_NDK"></p>
+</blockquote>
+<p>You are gonna have to find out where in your system the SDK installed to, on my system it was in
+<code>$HOME/Android/Sdk</code>, I added it to my <code>.profile</code> appending <code>export SDK_PATH=$HOME/Android/Sdk</code>, depending on
+what version was downloaded, add the <code>NDK</code> variable to the <code>.profile</code>, in my case it was <code>export NDK_PATH=$SDK_PATH/ndk/21.1.6352462</code>, also it is needed to add the <code>CC_PATH</code> to derived from the NDK, in my
+case it was <code>export CC_PATH=$CPATH:$NDK_PATH/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64/bin</code>,
+the final entries for the <code>.profile</code> looks like the following.</p>
+<pre><code>export PATH=$PATH:/opt/adb
+export SDK_PATH=$HOME/Android/Sdk
+export NDK_PATH=$SDK_PATH/ndk/21.1.6352462
+export CC_PATH=$CPATH:$NDK_PATH/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64/bin
+export ANDROID_HOME=&quot;$SDK_PATH&quot;
+</code></pre><h2 id="building-the-kernel">Building The Kernel</h2>
+<p>Since I&rsquo;m using Pixel 3XL the source code for android can be found at
+(<a href="https://source.android.com/setup/build/building-kernels">https://source.android.com/setup/build/building-kernels</a>) and follow the instructions, the branch I have to
+checkout <code>android-msm-crosshatch-4.9-android10</code> and add it to a bash variable</p>
+<pre><code>export KSRC_PATH=$HOME/Dropbox/Forensics/kernel/android/10
+</code></pre><p>Should look like this</p>
+<pre><code>╭─ 15:27:16  ~/Dropbox/Forensics/kernel/android/10
+╰─ ls -lh
+total 168K
+drwxrwxr-x 8 danielftapiar danielftapiar 4,0K may 22 01:32 .
+drwxrwxr-x 4 danielftapiar danielftapiar 4,0K may 22 00:58 ..
+drwxrwxr-x 9 danielftapiar danielftapiar 4,0K may 22 01:28 build
+drwxrwxr-x 4 danielftapiar danielftapiar 4,0K may 22 01:29 out
+drwxrwxr-x 3 danielftapiar danielftapiar 4,0K may 22 01:10 prebuilts
+drwxrwxr-x 4 danielftapiar danielftapiar 4,0K may 22 01:10 prebuilts-master
+drwxrwxr-x 4 danielftapiar danielftapiar 4,0K may 22 01:10 private
+drwxrwxr-x 7 danielftapiar danielftapiar 4,0K may 22 01:09 .repo
+lrwxrwxrwx 1 danielftapiar danielftapiar   48 may 22 01:10 build.config -&gt; private/msm-google/build.config.bluecross_no-cfi
+</code></pre><h3 id="get-the-config-from-phone">Get the Config from phone</h3>
+<p>Next, we need the configuration file with options that was used in the compilation for the kernel of the
+phone. In order to do this, you have to use <code>adb</code> to pull the file from the phone&rsquo;s file system, a quick intro
+into adb can be found here (<a href="https://developer.android.com/studio/command-line/adb)">https://developer.android.com/studio/command-line/adb)</a>. It is also necessary to
+turn on Developer Mode for you phone, it is different for every phone but on mine it was simple tapping <code>Build Information</code> 5 times to unlock it. After that go to <code>System -&gt; Developer Options -&gt; USB Debugging</code>. Once this
+is done run:</p>
+<pre><code>  adb pull /proc/config.gz
+  gunzip config.gz
+</code></pre><p>This should outpout a <code>config</code> file with the following entries:</p>
+<pre><code>#
+# Automatically generated file; DO NOT EDIT.
+# Linux/arm64 4.9.200 Kernel Configuration
+#
+CONFIG_ARM64=y
+CONFIG_64BIT=y
+CONFIG_ARCH_PHYS_ADDR_T_64BIT=y
+CONFIG_MMU=y
+CONFIG_DEBUG_RODATA=y
+CONFIG_ARM64_PAGE_SHIFT=12
+CONFIG_ARM64_CONT_SHIFT=4
+CONFIG_ARCH_MMAP_RND_BITS_MIN=18
+CONFIG_ARCH_MMAP_RND_BITS_MAX=24
+CONFIG_ARCH_MMAP_RND_COMPAT_BITS_MIN=11
+...
+</code></pre><p>Copy the contents of this file and append it to the <code>build.config</code> at the begging of the file, in the <code>$KSRC_PATH</code> it should look like
+this:</p>
+<pre><code>#APPENDED CONTENTS OF config FROM PHONE
+...
+CONFIG_SG_POOL=y
+CONFIG_ARCH_HAS_SG_CHAIN=y
+CONFIG_SBITMAP=y
+CONFIG_QMI_ENCDEC=y
+# CONFIG_QMI_ENCDEC_DEBUG is not set
+DEFCONFIG=b1c1_defconfig
+KERNEL_DIR=private/msm-google
+. ${ROOT_DIR}/${KERNEL_DIR}/build.config.common.clang
+POST_DEFCONFIG_CMDS=&quot;check_defconfig &amp;&amp; update_nocfi_config&quot;
+
+function update_nocfi_config() {
+  # Disable clang-specific options
+  ${KERNEL_DIR}/scripts/config --file ${OUT_DIR}/.config \
+    -d LTO \
+    -d LTO_CLANG \
+    -d CFI \
+    -d CFI_PERMISSIVE \
+    -d CFI_CLANG
+  (cd ${OUT_DIR} &amp;&amp; \
+    make O=${OUT_DIR} $archsubarch CROSS_COMPILE=${CROSS_COMPILE} olddefconfig)
+}
+
+</code></pre><h3 id="cross-compilation-with-lime">Cross Compilation with LiME</h3>
+<p>Now to the actual problem, in order to cross compile the official instructions state the following (<a href="https://github.com/volatilityfoundation/volatility/wiki/Android#download-and-cross-compile-lime">https://github.com/volatilityfoundation/volatility/wiki/Android#download-and-cross-compile-lime</a>)</p>
+<pre><code>$ git clone https://github.com/504ensicsLabs/LiME.git
+$ cd LiME/src
+$ svn diff
+Index: Makefile
+===================================================================
+--- Makefile    (revision 14)
++++ Makefile    (working copy)
+@@ -26,12 +26,12 @@
+ lime-objs := tcp.o disk.o main.o
+
+ KVER := $(shell uname -r)
+-
++KDIR_GOLDFISH := ~/android-source
++CCPATH := ~/android-ndk/toolchains/arm-linux-androideabi-4.7/prebuilt/darwin-x86/bin
+ PWD := $(shell pwd)
+
+ default:
+-   $(MAKE) -C /lib/modules/$(KVER)/build M=$(PWD) modules
+-   strip --strip-unneeded lime.ko
+-   mv lime.ko lime-$(KVER).ko
++   $(MAKE) ARCH=arm CROSS_COMPILE=$(CCPATH)/arm-linux-androideabi- -C $(KDIR_GOLDFISH) EXTRA_CFLAGS=-fno-pic M=$(PWD) modules
++   mv lime.ko lime-goldfish.ko
+
+    $(MAKE) tidy
+</code></pre><p>From this I can infer that I have to modify the Makefile in orer to cross compile as the default action is
+compile the source against the kernel of the running system. For android, we compile against the kernel source
+code, the modification to the Makefile is shown below.</p>
+<pre><code>KVER=4.14.150+
+KDIR=/home/danielftapiar/Dropbox/Forensics/kernel/android/10/out/android-msm-pixel-4.9/private/msm-google
+CCPATH=/home/danielftapiar/Android/Sdk/ndk/21.1.6352462/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64/bin
+
+#KDIR ?= /lib/modules/$(KVER)/build
+
+PWD := $(shell pwd)
+
+.PHONY: modules modules_install clean distclean debug
+
+default:
+	$(MAKE) ARCH=arm CROSS_COMPILE=$(CCPATH)/arm-linux-androideabi- -C $(KDIR) M=&quot;$(PWD)&quot; EXTRA_CFLAGS=-fno-pic  modules
+	strip --strip-unneeded lime.ko
+	mv lime.ko lime-$(KVER).ko
+</code></pre></div>
 
 </main>
 

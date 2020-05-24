@@ -1,24 +1,15 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>Projects on Cloudware</title>
-    <link>/projects/</link>
-    <description>Recent content in Projects on Cloudware</description>
+    <title>android on Cloudware</title>
+    <link>/tags/android/</link>
+    <description>Recent content in android on Cloudware</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
     <lastBuildDate>Mon, 05 Jun 2017 00:00:00 +0000</lastBuildDate>
     
-	<atom:link href="/projects/index.xml" rel="self" type="application/rss+xml" />
+	<atom:link href="/tags/android/index.xml" rel="self" type="application/rss+xml" />
     
-    
-    <item>
-      <title>Android Memory Forensics</title>
-      <link>/projects/android-memory-analysis/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>/projects/android-memory-analysis/</guid>
-      <description>Objectives  Learn Volatility Learn LiME Compile Android 10 Kernel Dump Memory on an Android Devices to see if data can be plucked from RAM using LiME Read dumped Memory using the Volatility Framework  Setup  LiME (https://github.com/504ensicsLabs/LiME) Android Kernel (https://source.android.com/setup/build/building-kernels) Volatility Framework (https://github.com/volatilityfoundation/volatility)  Introduction In order to get a snapshot of memory image, we need a tool for this, I have chosen LiME since it was developed exactly for this purpose in android devices.</description>
-    </item>
     
     <item>
       <title>Reverse Engineering Android Applications and Threat Intelligence</title>
