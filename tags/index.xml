@@ -6,10 +6,37 @@
     <description>Recent content in Tags on Cloudware</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Fri, 22 May 2020 00:00:00 +0000</lastBuildDate>
+    <lastBuildDate>Sun, 24 May 2020 00:00:00 +0000</lastBuildDate>
     
 	<atom:link href="/tags/index.xml" rel="self" type="application/rss+xml" />
     
+    
+    <item>
+      <title>filesystem</title>
+      <link>/tags/filesystem/</link>
+      <pubDate>Sun, 24 May 2020 00:00:00 +0000</pubDate>
+      
+      <guid>/tags/filesystem/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>linux</title>
+      <link>/tags/linux/</link>
+      <pubDate>Sun, 24 May 2020 00:00:00 +0000</pubDate>
+      
+      <guid>/tags/linux/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>rm -rf</title>
+      <link>/tags/rm-rf/</link>
+      <pubDate>Sun, 24 May 2020 00:00:00 +0000</pubDate>
+      
+      <guid>/tags/rm-rf/</guid>
+      <description></description>
+    </item>
     
     <item>
       <title>helm</title>
@@ -89,33 +116,6 @@
       <pubDate>Mon, 05 Jun 2017 00:00:00 +0000</pubDate>
       
       <guid>/tags/reverse-engineering/</guid>
-      <description></description>
-    </item>
-    
-    <item>
-      <title>Forensics</title>
-      <link>/tags/forensics/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>/tags/forensics/</guid>
-      <description></description>
-    </item>
-    
-    <item>
-      <title>LiMe</title>
-      <link>/tags/lime/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>/tags/lime/</guid>
-      <description></description>
-    </item>
-    
-    <item>
-      <title>volatility</title>
-      <link>/tags/volatility/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>/tags/volatility/</guid>
       <description></description>
     </item>
     

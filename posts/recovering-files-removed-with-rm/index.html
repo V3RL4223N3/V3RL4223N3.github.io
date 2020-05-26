@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en-us">
+    <head>
+        
+
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Recovering data in Linux ext4</title>
+        
+        <style>
+
+    html body {
+        font-family: 'Raleway', sans-serif;
+        background-color: white;
+    }
+
+    :root {
+        --accent: red;
+        --border-width:  5px ;
+    }
+
+</style>
+
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Raleway">
+
+
+ <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css"> 
+
+
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+
+
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
+ 
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+    
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/languages/go.min.js"></script>
+    
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/languages/haskell.min.js"></script>
+    
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/languages/kotlin.min.js"></script>
+    
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/languages/scala.min.js"></script>
+    
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/languages/swift.min.js"></script>
+    
+    <script>hljs.initHighlightingOnLoad();</script>
+
+
+
+
+
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+
+
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+
+
+<script>$(document).on('click', function() { $('.collapse').collapse('hide'); })</script>
+ <meta name="generator" content="Hugo 0.71.1" />
+        
+
+        
+
+        
+            <script type="text/javascript" async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+        
+
+        
+
+    </head>
+
+    <body>
+        
+
+        <nav class="navbar navbar-default navbar-fixed-top">
+            <div class="container">
+                <div class="navbar-header">
+                    <a class="navbar-brand visible-xs" href="#">Recovering data in Linux ext4</a>
+                    <button class="navbar-toggle" data-target=".navbar-collapse" data-toggle="collapse">
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                    </button>
+                </div>
+                <div class="collapse navbar-collapse">
+                    
+                        <ul class="nav navbar-nav">
+                            
+                                <li><a href="/">Home</a></li>
+                            
+                                <li><a href="/about/">About</a></li>
+                            
+                                <li><a href="/posts/">Posts</a></li>
+                            
+                                <li><a href="/projects/">Projects</a></li>
+                            
+                        </ul>
+                    
+                    
+                        <ul class="nav navbar-nav navbar-right">
+                            
+                                <li class="navbar-icon"><a href="mailto:me@example.com"><i class="fa fa-envelope-o"></i></a></li>
+                            
+                                <li class="navbar-icon"><a href="https://github.com/V3RL4223N3/"><i class="fa fa-github"></i></a></li>
+                            
+                                <li class="navbar-icon"><a href="https://twitter.com/DanielFTapiaR/"><i class="fa fa-twitter"></i></a></li>
+                            
+                                <li class="navbar-icon"><a href="https://www.linkedin.com/in/daniel-francisco-tapia-rybertt-463b075a/"><i class="fa fa-linkedin"></i></a></li>
+                            
+                                <li class="navbar-icon"><a href="https://stackoverflow.com/users/2165949/daniel-francisco-tapia-rybertt"><i class="fa fa-stack-overflow"></i></a></li>
+                            
+                        </ul>
+                    
+                </div>
+            </div>
+        </nav>
+
+
+<main>
+
+    <div>
+        <h2>Recovering data in Linux ext4</h2>
+        <h5></h5>
+        
+<a href="/tags/filesystem"><kbd class="item-tag">filesystem</kbd></a>
+
+<a href="/tags/linux"><kbd class="item-tag">linux</kbd></a>
+
+<a href="/tags/rm-rf"><kbd class="item-tag">rm -rf</kbd></a>
+
+
+    </div>
+
+    <div align="start" class="content"><h1 id="introduction">Introduction</h1>
+<p>Have you ever removed a file with <code>rm [FILENAME]</code> or even worse <code>rm -rf [DIR]</code> only to find out that that you
+didn&rsquo;t have a backup?. Well this happend to me with a project I hadn&rsquo;t pushed to Github, and could not recover
+despite my best efforts, coloquially I know that the file wasn&rsquo;t really deleted, it was just stored in
+unallocated spaces and the pointers from the filesystem datastructures where no longer pointing to it, so the
+file was recoverable but I didn&rsquo;t know how to get it back. This post documents my journey into filesystem in
+Linux to recover files in this state. Before moving forward please note that there is a difference between
+removing a file using <code>rm</code> and zeroing out the disk (<code>dd if=/dev/zero of=/dev/sda</code>), to my knowledge data
+that&rsquo;s been zero wiped cannot be recoverd by standard means, unless you are some sort of 3 letter goverment
+agency, on magnetic disks you could probably do some magnetic ghosting, but on most modern disks, this is (as
+far as I know) impossible.</p>
+<h1 id="prerequisites">Prerequisites</h1>
+<ul>
+<li>Linux Machine</li>
+<li>ext4 File System</li>
+<li>The Sluth Kit (TSK: <a href="https://www.sleuthkit.org/">https://www.sleuthkit.org/</a>)</li>
+</ul>
+<h2 id="my-setup">My Setup</h2>
+<p>I have a nvm disk, and a default isntallation of Linux, which means i have to partitions, the boot partition
+and the rest of the disk is used as data blocks.</p>
+<pre><code>$ /Forensics/recovery lsblk
+NAME        MAJ:MIN RM   SIZE RO TYPE MOUNTPOINT
+nvme0n1     259:0    0   477G  0 disk
+├─nvme0n1p1 259:1    0   512M  0 part /boot/efi
+└─nvme0n1p2 259:2    0 476,4G  0 part /
+</code></pre><p>And to see how it is mounted on the filesystem</p>
+<pre><code>$ /Forensics/recovery df -h
+Filesystem      Size  Used Avail Use% Mounted on
+udev            7,8G     0  7,8G   0% /dev
+tmpfs           1,6G  2,0M  1,6G   1% /run
+/dev/nvme0n1p2  468G  292G  153G  66% /
+</code></pre><h1 id="lets-do-it">Let&rsquo;s Do It!</h1>
+<p>In linux the default fileystem is ext4, and most often that not, LVM is being used, so the abstraction model
+for a typical Debian based Linux system could be sumarized as follow:</p>
+<pre><code>   Disk (Physical) -&gt; Partition (Logical) -&gt; LVM -&gt; Filesystem (Ext4) -&gt; Block Data
+</code></pre><p>That&rsquo;s how a disk should look in your mind, but to actual OS, it doesn&rsquo;t care about anything but INODES~,
+paths and directories are irrelevant, all it cares about is the disk and the inode number, you can view the
+inode of any file or directory by running <code>ls -i</code></p>
+<pre><code>$ /Forensics/recovery ls -i
+total 16
+24126926 drwxrwxr-x 2 danielftapiar danielftapiar 4096 may 24 12:18 .
+24126166 drwxrwxr-x 5 danielftapiar danielftapiar 4096 may 24 12:15 ..
+24126928 -rw-rw-r-- 1 danielftapiar danielftapiar   48 may 24 12:18 veryImportantFile2.txt
+24126927 -rw-rw-r-- 1 danielftapiar danielftapiar   58 may 24 12:16 veryImportantFile.txt
+
+$ /Forensics/recovery cat veryImportantFile.txt
+This has some important data that cannot ever be deleted!
+</code></pre><p>As you can see we have inode numbers for the current directory at <code>24126926</code> and the following 2 files as
+consecutive numbers of <code>24126927</code> and <code>24126928</code> this is important later on.</p>
+<p>Every block size on a default ext4 system is 4096[Kb]</p>
+<h2 id="tsk-the-sleuth-kit">TSK: The Sleuth Kit</h2>
+<p>TSK is a suite for forensic analysis on filesystem, it will be used across this experiment to view the
+internals of the disk and filesystem, First let&rsquo;s get some information on our current filesystem and disk
+<code>/dev/nvme0n1p2</code></p>
+<pre><code>$ sudo su
+$ fsstat /dev/nvme0n1p2
+
+File System Type: Ext4
+Volume Name:
+Volume ID: 130baa837c7eea8de64ea08eca2e1ab9
+
+Last Written at: 2020-05-21 22:57:26 (-04)
+Last Checked at: 2019-09-17 23:56:46 (-03)
+
+Last Mounted at: 2020-05-21 22:57:26 (-04)
+Unmounted properly
+Last mounted on: /
+
+Source OS: Linux
+Dynamic Structure
+Compat Features: Journal, Ext Attributes, Resize Inode, Dir Index
+InCompat Features: Filetype, Needs Recovery, Extents, 64bit, Flexible Block Groups,
+Read Only Compat Features: Sparse Super, Large File, Huge File, Extra Inode Size
+
+Journal ID: 00
+Journal Inode: 8
+
+METADATA INFORMATION
+--------------------------------------------
+Inode Range: 1 - 31227905
+Root Directory: 2
+Free Inodes: 30133037
+Inode Size: 256
+Orphan Inodes: 14326396, 14316784, 24641539, 14291343, 23199801, 14330335, 23199879, 14325278, 14320613, 14294096, 14290435, 14292001, 15337327, 23199747,
+
+CONTENT INFORMATION
+--------------------------------------------
+Block Groups Per Flex Group: 16
+Block Range: 0 - 124895487
+Block Size: 4096
+Free Blocks: 53805922
+
+BLOCK GROUP INFORMATION
+--------------------------------------------
+Number of Block Groups: 3812
+Inodes per group: 8192
+Blocks per group: 32768
+
+Group: 0:
+  Block Group Flags: [INODE_ZEROED]
+  Inode Range: 1 - 8192
+  Block Range: 0 - 32767
+  Layout:
+    Super Block: 0 - 0
+    Group Descriptor Table: 1 - 60
+    Group Descriptor Growth Blocks: 61 - 1084
+    Data bitmap: 1085 - 1085
+    Inode bitmap: 1101 - 1101
+    Inode Table: 1117 - 1628
+    Data Blocks: 9309 - 32767
+  Free Inodes: 8175 (99%)
+  Free Blocks: 9124 (27%)
+  Total Directories: 2
+  Stored Checksum: 0x4CF0
+
+  ...
+
+</code></pre><p>This gives us a low level overview of the filesystem, a Block size of 4096 [Kb] how many free blocks are
+remaining, Inodes per group (8192) and and blocks per groups (32768)</p>
+<h1 id="lets-do-it-1">Let&rsquo;s Do It!</h1>
+<p>The theory behind data recovery is that the files aren&rsquo;t really deleted, just the pointers from the filesystem
+data structures, the deleted blocks that accomodated the files are still there, but are now marked as
+<code>UNALLOCATED</code> which means that it is available to be overwritten by incoming writes to disk, so it is very
+important if you just noticed that you&rsquo;ve deleted critical data, stop all writes to the target system, this
+means, kill all processes that are writing new data to disk or the most, turning off the target machine.</p>
+<p>The technique I&rsquo;ll be using is disk carving, which means that I will use <code>dd</code> as a sort of scalpel to carve
+out sections of the disk that we know was the previous location of our lost data. So in our previous example
+we had inode numbers <code>24126926</code>, <code>24126927</code>, <code>24126928</code>, it has to be mapped to the correct Block Group
+number, to figure this out we need the Inode range (8192) and the Inode number of the deleted files</p>
+<pre><code>$ echo $((   24126926 / 8192 ))
+2945
+</code></pre><p>So around Group Block 2945 we should have our Inode range, let&rsquo;s verify</p>
+<pre><code>$ fsstat /dev/nvme0n1p2 | grep &quot;Group: 2945&quot; -A12
+Group: 2945:
+  Block Group Flags: [INODE_ZEROED]
+  Inode Range: 24125441 - 24133632
+  Block Range: 96501760 - 96534527
+  Layout:
+    Data bitmap: 96468993 - 96468993
+    Inode bitmap: 96469009 - 96469009
+    Inode Table: 96469536 - 96470047
+    Data Blocks: 96501760 - 96534527
+  Free Inodes: 6679 (81%)
+  Free Blocks: 0 (0%)
+  Total Directories: 129
+  Stored Checksum: 0x1FEF
+
+</code></pre><p>Our Inodes are in the range, which means that we can get our data from this block, run <code>dd</code> as follows:</p>
+<pre><code>$ dd if=/dev/nvme0n1p2 bs=4096 skip=96501760 count=32767 of=./images/bg2945.raw   
+32767+0 records in
+32767+0 records out
+134213632 bytes (134 MB, 128 MiB) copied, 0,214837 s, 625 MB/s
+</code></pre><ul>
+<li><code>bs</code> block group size (4096 [Kb])</li>
+<li><code>skip</code> number of block groups to skip (Group 2945 starts at 96501760)</li>
+<li><code>count</code> number of bytes from offset (96534527 - 96501760, eg: The entire block group)</li>
+<li><code>if</code> input file, from which file (in this case block device), to use as input</li>
+<li><code>of</code> output file, where to store the image</li>
+</ul>
+<p>And now looking for strings in this image we should see our current file,</p>
+<pre><code>```
+   root@earth:/home/danielftapiar/Dropbox/Forensics/recovery# strings images/bg2945.raw | grep &quot;This has some important data that cannot ever be deleted!&quot;
+  This has some important data that cannot ever be deleted!
+```
+</code></pre>
+<p>So we carved out the file, that is present on the filesystem but it was never deleted, if it is deleted now,
+then run the same chain of commands we can recover the file.</p>
+<pre><code>$ rm veryImportantFile.txt
+$ dd if=/dev/nvme0n1p2 bs=4096 skip=96501760 count=32767 of=./images/bg2945.raw   
+$ strings images/bg2945.raw | grep &quot;This has some important data that cannot ever be deleted!&quot;
+This has some important data that cannot ever be deleted!
+
+</code></pre><p>And boom! the file is in the image and you can view the contets to your heart&rsquo;s content.</p>
+<h2 id="odd-cases">Odd Cases</h2>
+<p>There are times when the block is carved and the file isn&rsquo;t there, most of the time the filesystem places the
+files in the same block as the parent directory, if not it will attempt to place it in the adjecent block and
+so forth, so when carving the filesystem with <code>dd</code> instead of targeting <code>count</code> with the blocksize you might
+want to multiply that value by however many blocks you want to look forward, so
+<code>count=BLOCKSIZE*NUMBER_OF_BLOCKS</code> and look for your file there.</p>
+<p>There are other times when the disk is full and the file is placed at the very edges of the disk, this happend
+to me when I was actually trying to dump an image on my file system and it was bigger than I expected and in
+turn used up 100% of the disk, thus any new files were placed anywhere the filesystem could fit it. the
+adjacent block placement didn&rsquo;t work in this case. and I had to resort to create a random file using <code>touch</code>
+then executing <code>istat</code> to get the Direct Block it was created.</p>
+<pre><code>$ istat /dev/nvme0n1p2 24126929
+inode: 24126929
+Allocated
+Group: 2945
+Generation Id: 754060831
+uid / gid: 1000 / 1000
+mode: rrw-rw-r--
+Flags: Extents,
+size: 58
+num of links: 1
+
+Inode Times:
+Accessed:       2020-05-24 12:16:52.796495865 (-04)
+File Modified:  2020-05-24 12:16:49.344420627 (-04)
+Inode Modified: 2020-05-24 12:16:49.344420627 (-04)
+File Created:   2020-05-24 12:16:14.503635323 (-04)
+
+Direct Blocks:
+57818842
+</code></pre><p>In this case <code>Direct Block: 57818842</code>, which is way farther than my previous attempt, this gives me a ball
+park estimate as to where to start the carving with <code>dd</code> to get to a recently created file that was deleted on
+a filesystem that had had its filesystem filled.</p>
+<h1 id="bibliography">Bibliography</h1>
+<ol>
+<li><a href="http://deer-run.com/~hal/EXT3FileRecovery.pdf">http://deer-run.com/~hal/EXT3FileRecovery.pdf</a></li>
+<li><a href="http://blog.hakzone.info/posts-and-articles/linux/disk-analysis-with-fdisk-mmls-fsstat-and-fls/">http://blog.hakzone.info/posts-and-articles/linux/disk-analysis-with-fdisk-mmls-fsstat-and-fls/</a></li>
+<li><a href="http://wiki.sleuthkit.org/index.php?title=FS_Analysis">http://wiki.sleuthkit.org/index.php?title=FS_Analysis</a></li>
+</ol>
+</div>
+
+</main>
+
+        <footer>
+            <p class="copyright text-muted">© All rights reserved. Powered by <a href="https://gohugo.io">Hugo</a> and <a href="https://github.com/calintat/minimal">Minimal</a>.</p>
+        </footer>
+
+        
+
+        
+    </body>
+
+</html>
+

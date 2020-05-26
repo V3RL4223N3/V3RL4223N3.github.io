@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>rm -rf on Cloudware</title>
+    <link>/tags/rm-rf/</link>
+    <description>Recent content in rm -rf on Cloudware</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    <lastBuildDate>Sun, 24 May 2020 00:00:00 +0000</lastBuildDate>
+    
+	<atom:link href="/tags/rm-rf/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Recovering data in Linux ext4</title>
+      <link>/posts/recovering-files-removed-with-rm/</link>
+      <pubDate>Sun, 24 May 2020 00:00:00 +0000</pubDate>
+      
+      <guid>/posts/recovering-files-removed-with-rm/</guid>
+      <description>Introduction Have you ever removed a file with rm [FILENAME] or even worse rm -rf [DIR] only to find out that that you didn&amp;rsquo;t have a backup?. Well this happend to me with a project I hadn&amp;rsquo;t pushed to Github, and could not recover despite my best efforts, coloquially I know that the file wasn&amp;rsquo;t really deleted, it was just stored in unallocated spaces and the pointers from the filesystem datastructures where no longer pointing to it, so the file was recoverable but I didn&amp;rsquo;t know how to get it back.</description>
+    </item>
+    
+  </channel>
+</rss>
