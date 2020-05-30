@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en-us">
+    <head>
+        
+
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Linux Memory Forensics on x86_64</title>
+        
+        <style>
+
+    html body {
+        font-family: 'Raleway', sans-serif;
+        background-color: #F0F0F0;
+    }
+
+    :root {
+        --accent: #000080;
+        --border-width:  5px ;
+    }
+
+</style>
+
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Raleway">
+
+
+ <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css"> 
+
+
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+
+
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
+ 
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+    
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/languages/go.min.js"></script>
+    
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/languages/bash.min.js"></script>
+    
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/languages/java.min.js"></script>
+    
+    <script>hljs.initHighlightingOnLoad();</script>
+
+
+
+
+
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+
+
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+
+
+<script>$(document).on('click', function() { $('.collapse').collapse('hide'); })</script>
+ <meta name="generator" content="Hugo 0.72.0-DEV" />
+        
+
+        
+
+        
+            <script type="text/javascript" async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+        
+
+        
+
+    </head>
+
+    <body>
+        
+
+        <nav class="navbar navbar-default navbar-fixed-top">
+            <div class="container">
+                <div class="navbar-header">
+                    <a class="navbar-brand visible-xs" href="#">Linux Memory Forensics on x86_64</a>
+                    <button class="navbar-toggle" data-target=".navbar-collapse" data-toggle="collapse">
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                    </button>
+                </div>
+                <div class="collapse navbar-collapse">
+                    
+                        <ul class="nav navbar-nav">
+                            
+                                <li><a href="/">Home</a></li>
+                            
+                                <li><a href="/about/">About</a></li>
+                            
+                                <li><a href="/posts/">Posts</a></li>
+                            
+                                <li><a href="/projects/">Projects</a></li>
+                            
+                        </ul>
+                    
+                    
+                        <ul class="nav navbar-nav navbar-right">
+                            
+                                <li class="navbar-icon"><a href="mailto:me@example.com"><i class="fa fa-envelope-o"></i></a></li>
+                            
+                                <li class="navbar-icon"><a href="https://github.com/V3RL4223N3/"><i class="fa fa-github"></i></a></li>
+                            
+                                <li class="navbar-icon"><a href="https://twitter.com/DanielFTapiaR/"><i class="fa fa-twitter"></i></a></li>
+                            
+                                <li class="navbar-icon"><a href="https://www.linkedin.com/in/daniel-francisco-tapia-rybertt-463b075a/"><i class="fa fa-linkedin"></i></a></li>
+                            
+                                <li class="navbar-icon"><a href="https://stackoverflow.com/users/2165949/daniel-francisco-tapia-rybertt"><i class="fa fa-stack-overflow"></i></a></li>
+                            
+                        </ul>
+                    
+                </div>
+            </div>
+        </nav>
+
+
+<main>
+
+    <div>
+        <h2>Linux Memory Forensics on x86_64</h2>
+        <h5></h5>
+        
+<a href="/tags/memory"><kbd class="item-tag">memory</kbd></a>
+
+<a href="/tags/forensics"><kbd class="item-tag">forensics</kbd></a>
+
+<a href="/tags/lime"><kbd class="item-tag">LiME</kbd></a>
+
+
+    </div>
+
+    <div align="start" class="content"><h1 id="setup--prerequisites">Setup / Prerequisites</h1>
+<ul>
+<li>Volatility (<a href="https://github.com/volatilityfoundation/volatility">https://github.com/volatilityfoundation/volatility</a>)</li>
+<li>LiME (<a href="https://github.com/504ensicsLabs/LiME">https://github.com/504ensicsLabs/LiME</a>)</li>
+<li>A Linux machine with an x86_64 Instruction Set</li>
+</ul>
+<h1 id="my-setup">My Setup</h1>
+<ul>
+<li>Kernel Version: 5.3.0-53-generic</li>
+<li>Ubuntu 18.04</li>
+<li>Instruction Set: x86_64</li>
+</ul>
+<h1 id="introduction">Introduction</h1>
+<p>Memory Analysis is great for looking at unecryted data that resides on a running program, it is very useful
+for getting a better sense of how an application works under the hood, and if there are any strings that are
+useful that are unobfuscated and laying in plain text, as well as open file descriptors that point to complete
+unencrypted files that where open in the time of the snapshot. One of the many ways of doing this is through LiME,
+which compiles a kernel module that has to be loaded onto the kernel and then snapshot the memory for
+analysis. If you are doing Forensics though one has to to be ever more careful in order to avoid disrupting
+the filesystem for evidence. Running LiME on the target machine will cause a change in the filesystem and
+memory state, but it&rsquo;s a risk worth taking giving what one can find out.</p>
+<h1 id="lets-do-it">Let&rsquo;s Do It!</h1>
+<pre><code>/home/danielftapiar/Github 
+$ git clone https://github.com/504ensicsLabs/LiME.git
+
+/home/danielftapiar/Github 
+$ cd LiME/src
+
+/home/danielftapiar/Github/LiME/src 
+$ make
+
+make -C /lib/modules/5.3.0-53-generic/build M=&quot;/home/danielftapiar/Github/LiME/src&quot; modules
+make[1]: Entering directory '/usr/src/linux-headers-5.3.0-53-generic'
+  CC [M]  /home/danielftapiar/Github/LiME/src/tcp.o
+  CC [M]  /home/danielftapiar/Github/LiME/src/disk.o
+  CC [M]  /home/danielftapiar/Github/LiME/src/main.o
+  CC [M]  /home/danielftapiar/Github/LiME/src/hash.o
+  CC [M]  /home/danielftapiar/Github/LiME/src/deflate.o
+  LD [M]  /home/danielftapiar/Github/LiME/src/lime.o
+  Building modules, stage 2.
+  MODPOST 1 modules
+  CC      /home/danielftapiar/Github/LiME/src/lime.mod.o
+  LD [M]  /home/danielftapiar/Github/LiME/src/lime.ko
+make[1]: Leaving directory '/usr/src/linux-headers-5.3.0-53-generic'
+strip --strip-unneeded lime.ko
+mv lime.ko lime-5.3.0-53-generic.ko
+</code></pre><p>This will generate a <code>lime-${KERVENL_VERSION}-generic.ko</code>  which needs to loaded as a kernel module.</p>
+<h2 id="file-extraction">File Extraction</h2>
+<p>The <code>insmod</code> command is how we load kernel modules into the running kernel, and will load the kernel module
+generated by lime into it.</p>
+<pre><code>/home/danielftapiar/Github/LiME/src 
+$ sudo insmod lime-5.3.0-53-generic.ko &quot;format=lime path=/home/danielftapiar/Dropbox/Forensics/aquistions/Linuxx64-memory-lime.lime.gz digest=sha512 compress=1&quot;
+</code></pre><ul>
+<li><code>format</code>: Image Format that will be generated, I will use the lime format.</li>
+<li><code>path</code>: Outut path where memory snapshot will be saved to.</li>
+<li><code>digest</code>: Checksum verification on the generated image (SHA512).</li>
+<li><code>compress</code>: Boolean Value, weather or not to compress the image.</li>
+</ul>
+<h2 id="network-extraction">Network Extraction</h2>
+<p>The same can be accomplished by network sockets instead of a file dump, this is a better approach so the
+target system doesn&rsquo;t change its file system state, during an aquisition.</p>
+<pre><code>/home/danielftapiar/Github/LiME/src 
+$ sudo insmod lime-5.3.0-53-generic.ko  &quot;format=lime path=tcp:4004 digest=sha512 compress=1&quot;
+</code></pre><ul>
+<li><code>path</code>: Same as as file dump, but instead, give it a protocol and port number to bind to instead of a
+filesystem path</li>
+<li><code>digest</code>: Checksum verification on the generated image (SHA512).</li>
+<li><code>compress</code>: Boolean Value, weather or not to compress the image.</li>
+</ul>
+<p>Running <code>netstat</code> to show open ports on the system gives:</p>
+<pre><code class="language-netstat" data-lang="netstat">tcp        0      0 0.0.0.0:4004            0.0.0.0:*               LISTEN  
+</code></pre><p>Then to extract it go to a remote machine that has connectivity to the target system, or from the localhost,
+either way is fine, although it is recommend to preform an aquistion from a different system.</p>
+<pre><code>$ nc -i 1 localhost 4004 &gt;memory-nc.lime.gz
+$ nc -i 1 localhost 4004 &gt;memory-nc.lime.gz.sha512
+</code></pre><h2 id="decompression">Decompression</h2>
+<p>Whichever approach you decide to take, you should have two different files on the directory, the <code>.gz</code> and the
+<code>.sha512</code>, finish by uncompressing the memory image.</p>
+<pre><code>$ cd /home/danielftapiar/Dropbox/Forensics/aquistions/
+$ unpigz Linuxx64-memory-lime.lime.gz
+
+ /home/danielftapiar/Dropbox/Forensics/aquistions# ls
+total 16623460
+drwxrwxr-x 3 danielftapiar danielftapiar        4096 may 30 14:30 .
+drwxrwxr-x 6 danielftapiar danielftapiar        4096 may 30 14:04 ..
+-rwxrwxr-- 1 danielftapiar danielftapiar 17022398688 may 30 13:59 Linuxx64-memory-lime.lime
+-rwxrwxr-- 1 danielftapiar danielftapiar         128 may 30 13:59 Linuxx64-memory-lime.lime.gz.sha512
+</code></pre><h1 id="volatility">Volatility</h1>
+<p>Before we can use the image we need to make a Volatility Profile for our LInux distribution.</p>
+<pre><code>/home/danielftapiar/Github/volatility
+$ cd tools/linux
+
+/home/danielftapiar/Github/volatility 
+$ make dwarf
+</code></pre><pre><code>make -C //lib/modules/5.3.0-53-generic/build CONFIG_DEBUG_INFO=y M=&quot;/home/danielftapiar/Github/volatility/tools/linux&quot; modules
+make[1]: Entering directory '/usr/src/linux-headers-5.3.0-53-generic'
+  CC [M]  /home/danielftapiar/Github/volatility/tools/linux/module.o
+  Building modules, stage 2.
+  MODPOST 1 modules
+WARNING: modpost: missing MODULE_LICENSE() in /home/danielftapiar/Github/volatility/tools/linux/module.o
+see include/linux/module.h for more information
+  CC      /home/danielftapiar/Github/volatility/tools/linux/module.mod.o
+  LD [M]  /home/danielftapiar/Github/volatility/tools/linux/module.ko
+make[1]: Leaving directory '/usr/src/linux-headers-5.3.0-53-generic'
+dwarfdump -di module.ko &gt; module.dwarf
+make -C //lib/modules/5.3.0-53-generic/build M=&quot;/home/danielftapiar/Github/volatility/tools/linux&quot; clean
+make[1]: Entering directory '/usr/src/linux-headers-5.3.0-53-generic'
+  CLEAN   /home/danielftapiar/Github/volatility/tools/linux/Module.symvers
+make[1]: Leaving directory '/usr/src/linux-headers-5.3.0-53-generic'
+</code></pre><p>This compiles the volatility source files, the directory should look like this:</p>
+<pre><code>/home/danielftapiar/Github/volatility/tools/linux 
+$ ls
+
+kcore  Makefile  Makefile.enterprise  module.c  module.dwarf
+</code></pre><p>The final generated file that matters is the <code>module.dwarf</code>, this along side the
+<code>/boot/System.map-${KERNEL_VERSION}-generic</code>
+make up the volatility profile that is needed by the tool, a quick glance at it let&rsquo;s us know that it contains
+symbols for the kernel.</p>
+<pre><code>/home/danielftapiar/Github/volatility/tools/linux 
+$ sudo cat /boot/System.map-5.3.0-53-generic | head -n 15
+
+0000000000000000 D __per_cpu_start
+0000000000000000 D fixed_percpu_data
+00000000000001e0 A kexec_control_code_size
+0000000000001000 D cpu_debug_store
+0000000000002000 D irq_stack_backing_store
+0000000000006000 D cpu_tss_rw
+0000000000009000 D gdt_page
+000000000000a000 d exception_stacks
+000000000000f000 d entry_stack_storage
+0000000000010000 D espfix_waddr
+0000000000010008 D espfix_stack
+0000000000010010 D cpu_llc_id
+0000000000010020 d mce_banks_array
+0000000000010220 D mce_num_banks
+0000000000010240 D cpu_llc_shared_map
+
+</code></pre><p>Zipping both of these files to generate the profile, and storing it on whichever directoy you want, must make
+sure you cd into it, or refernece it with the <code>--plugins=</code> option in <code>vol.py</code>, to avoid adding this parameter,
+the zipped profile could be stored in wherever volatility stores its profiles, I don&rsquo;t do this but you are
+welcome to.</p>
+<pre><code>/home/danielftapiar/Github/volatility/tools/linux
+$ sudo zip ~/Dropbox/Forensics/volatility-profiles//Linux-$(uname -r).zip  module.dwarf /boot/System.map-$(uname -r)
+
+/home/danieftapiar//Github/volatility/tools/linux
+$ cd ~/Dropbox/Forensics/volatility-profiles
+
+/home/danielftapiar/Github/volatility/tools/linux
+$ ls
+
+total 1224
+drwxrwxr-x 2     4096 may 30 14:04 .
+drwxrwxr-x 6     4096 may 30 14:04 ..
+-rwxrwxr-x 1  1241537 may 30 13:20 Linux-5.3.0-53-generic.zip
+
+
+                                    
+/home/danielftapiar/Dropbox/Forensics/volatility-profiles 
+$  vol.py --plugins=. --info | grep Linux
+
+Volatility Foundation Volatility Framework 2.6.1
+LinuxLinux-5_3_0-53-genericx64 - A Profile for Linux Linux-5.3.0-53-generic x64
+LinuxAMD64PagedMemory          - Linux-specific AMD 64-bit address space.
+linux_aslr_shift           - Automatically detect the Linux ASLR shift
+linux_banner               - Prints the Linux banner information
+linux_yarascan             - A shell in the Linux memory image
+</code></pre><p>Volatility gnerates the name of profile internally, that&rsquo;s why one must run the <code>--info</code> in order to find out
+what it named it, the standard is <code>Linux${FILENAME}${CPU_ARCHITECTURE}</code>, in this case since i named the file
+<code>Linux-5.3.0-53-generic</code> and running a x86_64 CPU, the final generated profile name from volatility is
+<code>LinuxLinux-5_3_0-53-genericx64</code>.</p>
+<h2 id="verify-image-snapshot-against-volatility">Verify Image Snapshot Against Volatility</h2>
+<p>We run the <code>linux_banner</code> plugin against the image to do a simple check that volatility loaded the lime image
+correctly</p>
+<pre><code>/home/danielftapiar/Dropbox/Forensics/volatility-profile
+$ vol.py --plugins=. --profile=LinuxLinux-5_3_0-53-genericx64 -f /home/danielftapiar/Dropbox/Forensics/aquistions/Linuxx64-memory-lime.lime  linux_banner
+
+Volatility Foundation Volatility Framework 2.6.1
+Linux version 5.3.0-53-generic (buildd@lgw01-amd64-016) (gcc version 7.5.0 (Ubuntu 7.5.0-3ubuntu1~18.04)) #47~18.04.1-Ubuntu SMP Thu May 7 13:10:50 UTC 2020 (Ubuntu 5.3.0-53.47~18.04.1-generic 5.3.18)
+
+</code></pre><p>If you see the linux banner, then the process was succesfull and we can move on to Memory Analysis.</p>
+<h1 id="memory-analysis">Memory Analysis</h1>
+<p>Now that the image is correctly loaded into volatility, we can explore a few different plugins and commands to
+get a sense of the information that one can aquire when examining an image.</p>
+<p>For a complete list of all commands available</p>
+<pre><code>/home/danielftapiar/Dropbox/Forensics/volatility-profiles
+$ vol.py --plugins=. --info 
+
+Volatility Foundation Volatility Framework 2.6.1
+
+
+Profiles
+--------
+LinuxLinux-5_3_0-53-genericx64 - A Profile for Linux Linux-5.3.0-53-generic x64
+VistaSP0x64                    - A Profile for Windows Vista SP0 x64
+VistaSP0x86                    - A Profile for Windows Vista SP0 x86
+VistaSP1x64                    - A Profile for Windows Vista SP1 x64
+VistaSP1x86                    - A Profile for Windows Vista SP1 x86
+VistaSP2x64                    - A Profile for Windows Vista SP2 x64
+...
+
+
+Plugins
+-------
+amcache                    - Print AmCache information
+apihooks                   - Detect API hooks in process and kernel memory
+atoms                      - Print session and window station atom tables
+atomscan                   - Pool scanner for atom tables
+auditpol                   - Prints out the Audit Policies from HKLM\SECURITY\Policy\PolAdtEv
+bigpools                   - Dump the big page pools using BigPagePoolScanner
+bioskbd                    - Reads the keyboard buffer from Real Mode memory
+cachedump                  - Dumps cached domain hashes from memory
+callbacks                  - Print system-wide notification routines
+clipboard                  - Extract the contents of the windows clipboard
+...
+
+</code></pre><p>It&rsquo;s a long list, and you can try all of them provided the plugin supports the image architecture.</p>
+<p>We previously ran the <code>linux_banner</code> plugin, this is a very simple plguin and all it does is output the linux
+banner to veriy that we are able to run commands on the image.</p>
+<p>To view the process lists, we use the <code>linux_pslist</code></p>
+<pre><code>/home/danielftapiar/Dropbox/Forensics/volatility-profiles                                                                                    
+$ vol.py --plugins=. --profile=LinuxLinux-5_3_0-53-genericx64 -f ~/Dropbox/Forensics/aquistions/Linuxx64-memory-lime.lime  linux_pslist
+
+Volatility Foundation Volatility Framework 2.6.1
+
+Offset             Name                 Pid             PPid            Uid             Gid    DTB                Start Time
+------------------ -------------------- --------------- --------------- --------------- ------ ------------------ ----------
+0xffff8dcd6c5edf00 systemd              1               0               0               0      0x000000046a73e000 2020-05-29 21:56:45 UTC+0000
+0xffff8dcd6c5eaf80 kthreadd             2               0               0               0      ------------------ 2020-05-29 21:56:45 UTC+0000
+0xffff8dcd6c5e97c0 rcu_gp               3               2               0               0      ------------------ 2020-05-29 21:56:45 UTC+0000
+0xffff8dcd6c5e8000 rcu_par_gp           4               2               0               0      ------------------ 2020-05-29 21:56:45 UTC+0000
+0xffff8dcd6bdc2f80 kworker/0:0H         6               2               0               0      ------------------ 2020-05-29 21:56:45 UTC+0000
+0xffff8dcd6bdc4740 mm_percpu_wq         9               2               0               0      ------------------ 2020-05-29 21:56:45 UTC+0000
+0xffff8dcd6bdc5f00 ksoftirqd/0          10              2               0               0      ------------------ 2020-05-29 21:56:45 UTC+0000
+0xffff8dcd6bdcaf80 rcu_sched            11              2               0               0      ------------------ 2020-05-29 21:56:45 UTC+0000
+0xffff8dcd6bdc97c0 migration/0          12              2               0               0      ------------------ 2020-05-29 21:56:45 UTC+0000
+0xffff8dcd6bdc8000 idle_inject/0        13              2               0               0      ------------------ 2020-05-29 21:56:45 UTC+0000
+0xffff8dcd6bf28000 cpuhp/0              14              2               0               0      ------------------ 2020-05-29 21:56:45 UTC+0000
+0xffff8dcd6bf2c740 cpuhp/1              15              2               0               0      ------------------ 2020-05-29 21:56:45 UTC+00
+...
+</code></pre><p>For a more structured process tree, use the <code>linux_pstree</code></p>
+<pre><code>
+/home/danielftapiar/Dropbox/Forensics/volatility-profiles
+$ vol.py --plugins=. --profile=LinuxLinux-5_3_0-53-genericx64 -f /home/danielftapiar/Dropbox/Forensics/aquistions/Linuxx64-memory-lime.lime  linux_pstree
+
+Volatility Foundation Volatility Framework 2.6.1
+Name                 Pid             Uid
+systemd              1
+.gdm3                1327
+..gdm-session-wor    2240
+...gdm-x-session     2508            1000
+....Xorg             2510            1000
+....i3               2562            1000
+.....ssh-agent       2657            1000
+
+.dockerd             2805
+.zsh                 3413            1000
+..chrome             3417            1000
+...cat               3423            1000
+...cat               3424            1000
+...chrome            3428            1000
+....nacl_helper      3431            1000
+....chrome           3434            1000
+.....chrome          3525            1000
+.....chrome          3605            1000
+.....chrome          3607            1000
+
+
+[kthreadd]           2
+.[rcu_gp]            3
+.[rcu_par_gp]        4
+.[kworker/0:0H]      6
+.[mm_percpu_wq]      9
+.[ksoftirqd/0]       10
+
+...
+
+</code></pre><p>It&rsquo;s a long list, the real output has been trimmed but there is about 885 entries on the image I tested.</p>
+<p>To view mounted devices on the image use <code>linux_mount</code></p>
+<pre><code>~/Dropbox/Forensics/volatility-profiles                                                                                                           ✔  10667  15:50:17
+$ vol.py --plugins=. --profile=LinuxLinux-5_3_0-53-genericx64 -f ~/Dropbox/Forensics/aquistions/Linuxx64-memory-lime.lime  linux_mount
+
+Volatility Foundation Volatility Framework 2.6.1
+
+/dev/nvme0n1p2            /snap                               ext4         rw,relatime
+tmpfs                     /sys/fs/cgroup                      tmpfs        ro,nosuid,nodev,noexec
+systemd-1                 /proc/sys/fs/binfmt_misc            autofs       rw,relatime
+/dev/loop12               /snap/gnome-3-28-1804/110           squashfs     ro,relatime,nodev
+configfs                  /sys/kernel/config                  configfs     rw,relatime
+tmpfs                     /run/user/1000                      tmpfs        rw,relatime,nosuid,nodev
+sysfs                     /sys                                sysfs        rw,relatime,nosuid,nodev,noexec
+tmpfs                     /dev/shm                            tmpfs        rw,nosuid,nodev
+...
+
+</code></pre><p>The idea is pretty clear, you can basically run any bash commands by finding its analogous plugin in
+volatility, you can retrieve, bash history, open files, open processes, etc. It is pretty great tool all
+around.</p>
+</div>
+
+</main>
+
+        <footer>
+            <p class="copyright text-muted">© All rights reserved. Powered by <a href="https://gohugo.io">Hugo</a> and <a href="https://github.com/calintat/minimal">Minimal</a>.</p>
+        </footer>
+
+        
+
+        
+    </body>
+
+</html>
+

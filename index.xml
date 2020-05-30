@@ -6,10 +6,19 @@
     <description>Recent content on Cloudware</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Sun, 24 May 2020 00:00:00 +0000</lastBuildDate>
+    <lastBuildDate>Sat, 30 May 2020 00:00:00 +0000</lastBuildDate>
     
 	<atom:link href="/index.xml" rel="self" type="application/rss+xml" />
     
+    
+    <item>
+      <title>Linux Memory Forensics on x86_64</title>
+      <link>/posts/memory-forensics-on-linux-x86/</link>
+      <pubDate>Sat, 30 May 2020 00:00:00 +0000</pubDate>
+      
+      <guid>/posts/memory-forensics-on-linux-x86/</guid>
+      <description>Setup / Prerequisites  Volatility (https://github.com/volatilityfoundation/volatility) LiME (https://github.com/504ensicsLabs/LiME) A Linux machine with an x86_64 Instruction Set  My Setup  Kernel Version: 5.3.0-53-generic Ubuntu 18.04 Instruction Set: x86_64  Introduction Memory Analysis is great for looking at unecryted data that resides on a running program, it is very useful for getting a better sense of how an application works under the hood, and if there are any strings that are useful that are unobfuscated and laying in plain text, as well as open file descriptors that point to complete unencrypted files that where open in the time of the snapshot.</description>
+    </item>
     
     <item>
       <title>Recovering data in Linux ext4</title>
@@ -49,15 +58,6 @@ I wrote my thesis on android reverse engineering when graduating from UTFSM in C
       <guid>/projects/reverse-engineering-android-apps/</guid>
       <description>Introduction This was my graduate thesis, in which I reversed engineered and android APK application, to then use a metasploit payload to launch malware from the infected app and then proceeded to attempt anti virus evasion.
 I go through the android permission model, applicaiton settings and how app signing works. An overview of ARM architecture, to move on to a list of tools I used to reverse engineer, including Metasploit and APKTool.</description>
-    </item>
-    
-    <item>
-      <title></title>
-      <link>/projects/linux-memory-forensics/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>/projects/linux-memory-forensics/</guid>
-      <description></description>
     </item>
     
   </channel>
