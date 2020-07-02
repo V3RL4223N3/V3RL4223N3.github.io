@@ -146,5 +146,50 @@
       <description></description>
     </item>
     
+    <item>
+      <title>containerd</title>
+      <link>/tags/containerd/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>/tags/containerd/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>docker</title>
+      <link>/tags/docker/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>/tags/docker/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>Kernel</title>
+      <link>/tags/kernel/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>/tags/kernel/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>Namespaces</title>
+      <link>/tags/namespaces/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>/tags/namespaces/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>runc</title>
+      <link>/tags/runc/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>/tags/runc/</guid>
+      <description></description>
+    </item>
+    
   </channel>
 </rss>

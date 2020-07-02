@@ -1,0 +1,1197 @@
+<!DOCTYPE html>
+<html lang="en-us">
+    <head>
+        
+
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Docker In-Depth</title>
+        
+        <style>
+
+    html body {
+        font-family: 'Raleway', sans-serif;
+        background-color: #F0F0F0;
+    }
+
+    :root {
+        --accent: #000080;
+        --border-width:  5px ;
+    }
+
+</style>
+
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Raleway">
+
+
+ <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css"> 
+
+
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+
+
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
+ 
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+    
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/languages/go.min.js"></script>
+    
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/languages/bash.min.js"></script>
+    
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/languages/java.min.js"></script>
+    
+    <script>hljs.initHighlightingOnLoad();</script>
+
+
+
+
+
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+
+
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+
+
+<script>$(document).on('click', function() { $('.collapse').collapse('hide'); })</script>
+ <meta name="generator" content="Hugo 0.72.0-DEV" />
+        
+
+        
+
+        
+            <script type="text/javascript" async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+        
+
+        
+
+    </head>
+
+    <body>
+        
+
+        <nav class="navbar navbar-default navbar-fixed-top">
+            <div class="container">
+                <div class="navbar-header">
+                    <a class="navbar-brand visible-xs" href="#">Docker In-Depth</a>
+                    <button class="navbar-toggle" data-target=".navbar-collapse" data-toggle="collapse">
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                    </button>
+                </div>
+                <div class="collapse navbar-collapse">
+                    
+                        <ul class="nav navbar-nav">
+                            
+                                <li><a href="/">Home</a></li>
+                            
+                                <li><a href="/about/">About</a></li>
+                            
+                                <li><a href="/posts/">Posts</a></li>
+                            
+                                <li><a href="/projects/">Projects</a></li>
+                            
+                        </ul>
+                    
+                    
+                        <ul class="nav navbar-nav navbar-right">
+                            
+                                <li class="navbar-icon"><a href="mailto:me@example.com"><i class="fa fa-envelope-o"></i></a></li>
+                            
+                                <li class="navbar-icon"><a href="https://github.com/V3RL4223N3/"><i class="fa fa-github"></i></a></li>
+                            
+                                <li class="navbar-icon"><a href="https://twitter.com/DanielFTapiaR/"><i class="fa fa-twitter"></i></a></li>
+                            
+                                <li class="navbar-icon"><a href="https://www.linkedin.com/in/daniel-francisco-tapia-rybertt-463b075a/"><i class="fa fa-linkedin"></i></a></li>
+                            
+                                <li class="navbar-icon"><a href="https://stackoverflow.com/users/2165949/daniel-francisco-tapia-rybertt"><i class="fa fa-stack-overflow"></i></a></li>
+                            
+                        </ul>
+                    
+                </div>
+            </div>
+        </nav>
+
+
+<main>
+
+    <div>
+        <h2>Docker In-Depth</h2>
+        <h5>Describe how Docker works at a low level</h5>
+        
+<a href="/tags/docker"><kbd class="item-tag">docker</kbd></a>
+
+<a href="/tags/kernel"><kbd class="item-tag">Kernel</kbd></a>
+
+<a href="/tags/namespaces"><kbd class="item-tag">Namespaces</kbd></a>
+
+<a href="/tags/containerd"><kbd class="item-tag">containerd</kbd></a>
+
+<a href="/tags/runc"><kbd class="item-tag">runc</kbd></a>
+
+
+    </div>
+
+    <div align="start" class="content"><h1 id="setup">Setup</h1>
+<ul>
+<li>Ubuntu 18.04</li>
+<li>Docker version 18.09.7, build 2d0083d</li>
+<li>containerd 1.2.6-0ubuntu1~18.04.2</li>
+<li>runc version spec: 1.0.1-dev</li>
+<li>kervenl version: 5.3.0-61-generic</li>
+</ul>
+<h1 id="introduction">Introduction</h1>
+<h2 id="internals">Internals</h2>
+<p>There are no such things as containers, Docker is only leveraging kernel feature called a <code>namespace</code>  through
+different programs to give the illusion of container construct. Each namespace isolates a different dimension
+of the container and can be shared to other containers.</p>
+<h3 id="namespaces">Namespaces</h3>
+<p>There are 5 namespaces involved in the container creation process</p>
+<ul>
+<li>pid : Isolation of Processes, different PIDs per container</li>
+<li>net : Isolation of Network Interface (eth0)</li>
+<li>ipc : Isolation of Inter Process Communication</li>
+<li>mnt : Isolation of filesystem mount points</li>
+<li>uts : Isolation kernel and version identifiers (UTS: Unix Timesharing System)</li>
+</ul>
+<h3 id="control-groups">Control Groups</h3>
+<p>Control Groups or cgroups for short, are kernel mechansisims that limit a namespaces access to hardware
+resources, used by PID / IPC Namespaces.</p>
+<h3 id="filesystem">Filesystem</h3>
+<p>The container doesn&rsquo;t use the same filesystem as the host machine, it uses the Union File System, they work by
+using layers. Other variants are:</p>
+<ul>
+<li>AUFS</li>
+<li>btrfs</li>
+<li>vfs</li>
+<li>Device Mapper</li>
+</ul>
+<h3 id="container-formats">Container Formats</h3>
+<p>All three previously mentioned kernel features define what is called a <code>Container Format</code>, for Docker this
+container format is called <code>libcontainer</code>, for other container runtimes for example Rocket, a competitor of
+docker is called <code>App Container</code>.</p>
+<h1 id="architecture">Architecture</h1>
+<p>Docker by itslef is just a daemon that runs on the background, it uses a client-server model to operate. The
+known <code>docker</code> command from the CLI is the client and where images are deployed is the &ldquo;server&rdquo;. Docker is
+composed of plugable components that handle different aspects of  running a container.</p>
+<ul>
+<li><code>dockerd</code>: It is the docker daemon, it listen to docker api calls and leverages containerd to create new
+containers, it binds to <code>/var/run/docker.sock</code> and creates the pid file <code>/var/run/docker.pid</code> , this is why you
+need either root or be a member of the docker group in order to run the docker daemon.The daemon can create 3
+different types of sockets (tcp, fd, unix), the default one on my system is <code>fd</code> as shown by  <code>ps</code>
+command</li>
+</ul>
+<pre><code>$ ps $(pidof dockerd)
+
+PID TTY      STAT   TIME COMMAND
+6811 ?        Ssl    0:14 /usr/bin/dockerd -H fd:// --containerd=/run/containerd/containerd.sock
+</code></pre><ul>
+<li>
+<p><code>containerd</code>: It&rsquo;s involved in the process of setting up network interfaces and filesystem / storage, basically
+prepearing an environment for the actual container runtime, in this case runc [<a href="http://alexander.holbreich.org/docker-components-explained/" title="Docker Components">1</a>]. It also implements the
+OCI runtime specifications [<a href="http://alexander.holbreich.org/docker-components-explained/" title="Docker Components">1</a>].</p>
+</li>
+<li>
+<p><code>runc</code>: The actual process in charge of running the process, it is run as a child process of containerd, that
+is run through the <code>containerd-shim</code></p>
+</li>
+</ul>
+<p>A high level overview of these components are shown below:</p>
+<p><img src="/images/docker-architecture.png" alt="DOCKER_ARHITECTURE" title="Optional Title"></p>
+<p><em>Fig 1: Docker Components for Running Containers</em></p>
+<h1 id="docker-deployment-analysis">Docker Deployment Analysis</h1>
+<p>Running <code>docker info</code> prints to stdout the configuration options with which docker was deployed. On my system
+it looks like this.</p>
+<pre><code>docker info
+Containers: 48
+ Running: 1
+ Paused: 0
+ Stopped: 47
+Images: 110
+Server Version: 18.09.7
+Storage Driver: overlay2
+ Backing Filesystem: extfs
+ Supports d_type: true
+ Native Overlay Diff: true
+Logging Driver: json-file
+Cgroup Driver: cgroupfs
+Plugins:
+ Volume: local
+ Network: bridge host macvlan null overlay
+ Log: awslogs fluentd gcplogs gelf journald json-file local logentries splunk syslog
+Swarm: inactive
+Runtimes: runc
+Default Runtime: runc
+Init Binary: docker-init
+containerd version:
+runc version: N/A
+init version: v0.18.0 (expected: fec3683b971d9c3ef73f284f176672c44b448662)
+Security Options:
+ apparmor
+ seccomp
+  Profile: default
+Kernel Version: 5.3.0-61-generic
+Operating System: Ubuntu 18.04.3 LTS
+OSType: linux
+Architecture: x86_64
+CPUs: 8
+Total Memory: 15.49GiB
+Name: xxxx
+ID: xxxx:xxxx:xxxx:xxxx:xxxx:xxxx:xxxx:xxxx:xxxx:
+Docker Root Dir: /var/lib/docker
+Username: xxxxxxxxx
+Registry: https://index.docker.io/v1/
+Labels:
+</code></pre><p>From here we can see that the docker root is located at <code>/var/lib/docker</code>. The contents of the directory are
+as follows.</p>
+<pre><code>$ sudo ls -all /var/lib/docker -all
+total 84
+drwx--x--x  14 root root  4096  .
+drwxr-xr-x  90 root root  4096  ..
+drwx------   2 root root  4096  builder
+drwx------   4 root root  4096  buildkit
+drwx------  50 root root  4096  containers
+drwx------   3 root root  4096  image
+drwxr-x---   3 root root  4096  network
+drwx------ 213 root root 28672  overlay2
+drwx------   4 root root  4096  plugins
+drwx------   2 root root  4096  runtimes
+drwx------   2 root root  4096  swarm
+drwx------   2 root root  4096  tmp
+drwx------   2 root root  4096  trust
+drwx------   3 root root  4096  volumes
+
+</code></pre><p>This directory holds all the files needed by docker/containerd/runc to actually execute a container. Most
+notably the <code>containers</code> directory holds the configuration for the environment for a container, while the
+<code>overlay2</code> holds the filesystem directories that will be mounted on the container&rsquo;s filesystem.</p>
+<h2 id="running-a-container">Running a container</h2>
+<p>Using docker to run a sample nginx image on any port, that will be used for the analysis,  with the following
+command:</p>
+<pre><code>$ docker run  -P -d  nginx
+79415509360edd0ddbb33ce05887a0b5633fed7da58d32c83536af8c04f72f28
+</code></pre><ul>
+<li><code>-P</code>: Randomly select the ports to bind, you can statically set them with <code>-p 80:80</code> or <code>-p 443:443</code></li>
+<li><code>-d</code>: Deattached mode, it removes the process from the terminal, you can still kill the container with
+<code>docker kill ${ID}</code></li>
+</ul>
+<p>What is returned here is the internal ID for the container that was just spawned.</p>
+<p>This will be the basis for further analysis.</p>
+<h2 id="process-map">Process Map</h2>
+<p>The initial process on Linux Ubuntu is <code>systemd</code>, and other procesess are forks of this, including
+<code>containerd</code> and <code>dockerd</code> is illustrated  below:</p>
+<p><img src="/images/process-tree-no-running-containers.png" alt="PROCESS_TREE_STANDY"></p>
+<p><em>Fig 2: Docker Process Tree</em></p>
+<p>Viewing the running process tree:</p>
+<pre><code>systemd,1 splash
+  |-containerd,905
+  |   |-containerd-shim,11738 -namespace moby -workdir...
+  |   |   |-bash,25790
+  |   |   |-nginx,11756
+  |   |   |   `-nginx,11867
+  |   |   |-{containerd-shim},11739
+  |   |   |-{containerd-shim},11740
+  |   |   |-{containerd-shim},11741
+  |   |   |-{containerd-shim},11742
+  |   |   |-{containerd-shim},11743
+  |   |   |-{containerd-shim},11744
+  |   |   |-{containerd-shim},11798
+  |   |   |-{containerd-shim},11799
+  |   |   `-{containerd-shim},12181
+  |   |-{containerd},939
+  |   |-{containerd},940
+  |   |-{containerd},941
+  |   |-{containerd},942
+  |   |-{containerd},943
+  |   |-{containerd},980
+  |   |-{containerd},981
+  |   |-{containerd},982
+  |   |-{containerd},984
+  |   |-{containerd},1005
+  |   |-{containerd},1006
+  |   |-{containerd},1015
+  |   |-{containerd},1016
+  |   |-{containerd},1028
+  |   |-{containerd},6871
+  |   |-{containerd},6872
+  |   |-{containerd},9688
+  |   |-{containerd},9689
+  |   |-{containerd},15141
+  |   |-{containerd},4423
+  |   |-{containerd},6450
+  |   |-{containerd},12766
+  |   |-{containerd},8467
+  |   |-{containerd},13764
+  |   |-{containerd},2002
+  |   `-{containerd},7109
+  |-dockerd,6811 -H fd:// --containerd=/run/containerd/containerd.sock
+  |   |-docker-proxy,11728 -proto tcp -host-ip 0.0.0.0 -host-port 32768 -container-ip 172.17.0.2 -container-port 80
+  |   |   |-{docker-proxy},11730
+  |   |   |-{docker-proxy},11731
+  |   |   |-{docker-proxy},11732
+  |   |   |-{docker-proxy},11733
+  |   |   |-{docker-proxy},11734
+  |   |   |-{docker-proxy},11735
+  |   |   |-{docker-proxy},11736
+  |   |   `-{docker-proxy},11737
+  |   |-{dockerd},6824
+  |   |-{dockerd},6826
+  |   |-{dockerd},6827
+  |   |-{dockerd},6828
+  |   |-{dockerd},6830
+  |   |-{dockerd},6832
+  |   |-{dockerd},6833
+  |   |-{dockerd},6834
+  |   |-{dockerd},6835
+  |   |-{dockerd},6836
+  |   |-{dockerd},6850
+  |   |-{dockerd},6851
+  |   |-{dockerd},6852
+  |   |-{dockerd},6853
+  |   |-{dockerd},6856
+  |   |-{dockerd},6857
+  |   |-{dockerd},6859
+  |   |-{dockerd},6860
+  |   |-{dockerd},6861
+  |   |-{dockerd},6862
+  |   |-{dockerd},6863
+  |   |-{dockerd},6864
+  |   |-{dockerd},6865
+  |   |-{dockerd},6866
+  |   |-{dockerd},6867
+  |   |-{dockerd},6868
+  |   `-{dockerd},6869
+</code></pre><p>From here we can see that the systemd process has a PID=1 and is the first process on the system, followed by
+containerd with <code>PID=905</code> and dockerd with <code>PID=6811</code>.</p>
+<ul>
+<li><code>dockerd</code> is started with the host flag <code>-H</code> set to <code>fd://</code> which means it is using linux file descriptors
+as the default socket for connection and the<code>--containerd</code> flag which sets the GRPc address, set to
+<code>/run/containerd/containerd.sock</code>, it also forks a docker-proxy process [<a href="https://windsock.io/the-docker-proxy/" title="Docker Proxy">4</a>].</li>
+<li><code>containerd</code> is started with no flags, but when a container is run it uses a <code>containerd-shim</code> with
+<code>PID=11738</code> that handles the container creation process. It is started with the following.</li>
+</ul>
+<pre><code>$ ps -ef  | grep containerd-shim
+UID      PID     PPID  C  TTY      TIME     CMD
+root     11738   905   0  ?        00:00:01 containerd-shim -namespace moby -workdir /var/lib/containerd/io.containerd.runtime.v1.linux/moby/79415509360edd0ddbb33ce05887a0b5633fed7da58d32c83536af8c04f72f28 -address /run/containerd/containerd.sock -containerd-binary /usr/bin/containerd -runtime-root /var/run/docker/runtime-runc
+</code></pre><ul>
+<li><code>-namespace</code>: moby</li>
+<li><code>-workdir</code>:  /var/lib/containerd/io.containerd.runtime.v1.linux/moby/7941550&hellip;.</li>
+<li><code>-address</code>:  /run/containerd/containerd.sock</li>
+<li><code>-containerd-binary</code>: /usr/bin/containerd</li>
+<li><code>-runtime</code>:  /var/run/docker/runtime-runc</li>
+</ul>
+<p>The namespace name is found in the <code>/var/lib/containerd/io.containerd.runtime.v1.linux</code> and it holds a folder
+with the container ID from docker.</p>
+<pre><code>/var/lib/containerd/io.containerd.runtime.v1.linux $ tree
+.
+└── moby
+    └── 79415509360edd0ddbb33ce05887a0b5633fed7da58d32c83536af8c04f72f28
+</code></pre><h2 id="docker-anatomy">Docker Anatomy</h2>
+<p>I already have a running container with an nginx image running. This can be further verified by running <code>docker ps</code>.</p>
+<pre><code>$ docker ps --no-trunc
+CONTAINER ID                                                     IMAGE   COMMAND                                         PORTS        
+79415509360edd0ddbb33ce05887a0b5633fed7da58d32c83536af8c04f72f28 nginx  &quot;/docker-entrypoint.sh nginx -g 'daemon off;'&quot;   0.0.0.0:32768-&gt;80/tcp  
+</code></pre><p>When a container is created it also creates a directory with its container ID on <code>/var/lib/docker/containers</code>
+or more generally <code>${DOCKER_ROOT}/containers</code></p>
+<pre><code>$ ls -all /var/lib/docker/containers/79415509360edd0ddbb33ce05887a0b5633fed7da58d32c83536af8c04f72f28
+total 44
+drwx------  4 root root 4096 jun 28 20:47 .
+drwx------ 51 root root 4096 jun 28 20:47 ..
+-rw-r-----  1 root root 1072 jun 28 20:47 79415509360edd0ddbb33ce05887a0b5633fed7da58d32c83536af8c04f72f28-json.log
+drwx------  2 root root 4096 jun 28 20:47 checkpoints
+-rw-------  1 root root 2969 jun 28 20:47 config.v2.json
+-rw-r--r--  1 root root 1420 jun 28 20:47 hostconfig.json
+-rw-r--r--  1 root root   13 jun 28 20:47 hostname
+-rw-r--r--  1 root root  174 jun 28 20:47 hosts
+drwx------  3 root root 4096 jun 28 20:47 mounts
+-rw-r--r--  1 root root  645 jun 28 20:47 resolv.conf
+-rw-r--r--  1 root root   71 jun 28 20:47 resolv.conf.hash
+
+</code></pre><p>A break down of all these files is shown below:</p>
+<ul>
+<li>${CONTAINER_ID}-json.log: This file logs what the containerd is doing and outputing to stdout, since I&rsquo;ve
+only started the container all it has done right now is look for the <code>/docker-entrypoint.sh</code> and
+<code>10-listen-on-ipv6-by-default.sh</code></li>
+</ul>
+<pre><code>{&quot;log&quot;:&quot;/docker-entrypoint.sh: /docker-entrypoint.d/ is not empty, will attempt to perform configuration\n&quot;,&quot;stream&quot;:&quot;stdout&quot;}
+{&quot;log&quot;:&quot;/docker-entrypoint.sh: Looking for shell scripts in /docker-entrypoint.d/\n&quot;,&quot;stream&quot;:&quot;stdout&quot;}
+{&quot;log&quot;:&quot;/docker-entrypoint.sh: Launching /docker-entrypoint.d/10-listen-on-ipv6-by-default.sh\n&quot;,&quot;stream&quot;:&quot;stdout&quot;}
+{&quot;log&quot;:&quot;10-listen-on-ipv6-by-default.sh: Getting the checksum of /etc/nginx/conf.d/default.conf\n&quot;,&quot;stream&quot;:&quot;stdout&quot;}
+{&quot;log&quot;:&quot;10-listen-on-ipv6-by-default.sh: Enabled listen on IPv6 in /etc/nginx/conf.d/default.conf\n&quot;,&quot;stream&quot;:&quot;stdout&quot;}
+{&quot;log&quot;:&quot;/docker-entrypoint.sh: Launching /docker-entrypoint.d/20-envsubst-on-templates.sh\n&quot;,&quot;stream&quot;:&quot;stdout&quot;}
+{&quot;log&quot;:&quot;/docker-entrypoint.sh: Configuration complete; ready for start up\n&quot;,&quot;stream&quot;:&quot;stdout&quot;}
+</code></pre><p>Exec into the container to verify this:</p>
+<pre><code>$ docker exec -it 79415509360e /bin/bash
+</code></pre><pre><code>root@79415509360e:/# cat /docker-entrypoint.sh
+#!/usr/bin/env sh
+# vim:sw=4:ts=4:et
+
+set -e
+
+if [ &quot;$1&quot; = &quot;nginx&quot; -o &quot;$1&quot; = &quot;nginx-debug&quot; ]; then
+    if /usr/bin/find &quot;/docker-entrypoint.d/&quot; -mindepth 1 -maxdepth 1 -type f -print -quit 2&gt;/dev/null | read v; then
+        echo &quot;$0: /docker-entrypoint.d/ is not empty, will attempt to perform configuration&quot;
+
+        echo &quot;$0: Looking for shell scripts in /docker-entrypoint.d/&quot;
+        find &quot;/docker-entrypoint.d/&quot; -follow -type f -print | sort -n | while read -r f; do
+            case &quot;$f&quot; in
+                *.sh)
+                    if [ -x &quot;$f&quot; ]; then
+                        echo &quot;$0: Launching $f&quot;;
+                        &quot;$f&quot;
+                    else
+                        # warn on shell scripts without exec bit
+                        echo &quot;$0: Ignoring $f, not executable&quot;;
+                    fi
+                    ;;
+                *) echo &quot;$0: Ignoring $f&quot;;;
+            esac
+        done
+
+        echo &quot;$0: Configuration complete; ready for start up&quot;
+    else
+        echo &quot;$0: No files found in /docker-entrypoint.d/, skipping configuration&quot;
+    fi
+fi
+
+exec &quot;$@&quot;
+
+</code></pre><pre><code>root@79415509360e:~# ls -all /docker-entrypoint.d/
+total 16
+drwxr-xr-x 1 root root 4096  .
+drwxr-xr-x 1 root root 4096  ..
+-rwxrwxr-x 1 root root 1963  10-listen-on-ipv6-by-default.sh
+-rwxrwxr-x 1 root root 1043  20-envsubst-on-templates.sh
+
+</code></pre><p>As you can see, at container startup it executes whatever is found at <code>/docker-entrypoint.sh</code> and since the
+contents reference a file called <code>10-listen-on-ipv6-by-default.sh</code> it shows up on the ${CONTAINER_ID}-json.log</p>
+<ul>
+<li>config2.json: A JSON file for configuring the container, <code>docker inspect ${CONTAINER_ID}</code> gets most of its
+data from this file. When running <code>docker run</code> with parameters, those parameters are mapped to the attributes of this file,
+for example <code>-p 80:80</code> will create the correct mapping in <code>NetworkSettings.Ports</code>. Broadly speaking all the
+parameters and Dockerfile configurations are stored on this file.</li>
+</ul>
+<pre><code>root@earth:/var/lib/docker/containers/79415509360edd0ddbb33ce05887a0b5633fed7da58d32c83536af8c04f72f28# cat config.v2.json  | jq
+{
+  &quot;StreamConfig&quot;: {},
+  &quot;State&quot;: {
+    &quot;Running&quot;: true,
+    &quot;Paused&quot;: false,
+    &quot;Restarting&quot;: false,
+    &quot;OOMKilled&quot;: false,
+    &quot;RemovalInProgress&quot;: false,
+    &quot;Dead&quot;: false,
+    &quot;Pid&quot;: 11756,
+    &quot;ExitCode&quot;: 0,
+    &quot;Error&quot;: &quot;&quot;,
+    &quot;StartedAt&quot;: &quot;2020-06-29T00:47:27.064480116Z&quot;,
+    &quot;FinishedAt&quot;: &quot;0001-01-01T00:00:00Z&quot;,
+    &quot;Health&quot;: null
+  },
+  &quot;ID&quot;: &quot;79415509360edd0ddbb33ce05887a0b5633fed7da58d32c83536af8c04f72f28&quot;,
+  &quot;Created&quot;: &quot;2020-06-29T00:47:26.622421221Z&quot;,
+  &quot;Managed&quot;: false,
+  &quot;Path&quot;: &quot;/docker-entrypoint.sh&quot;,
+  &quot;Args&quot;: [
+    &quot;nginx&quot;,
+    &quot;-g&quot;,
+    &quot;daemon off;&quot;
+  ],
+  &quot;Config&quot;: {
+    &quot;Hostname&quot;: &quot;79415509360e&quot;,
+    &quot;Domainname&quot;: &quot;&quot;,
+    &quot;User&quot;: &quot;&quot;,
+    &quot;AttachStdin&quot;: false,
+    &quot;AttachStdout&quot;: false,
+    &quot;AttachStderr&quot;: false,
+    &quot;ExposedPorts&quot;: {
+      &quot;80/tcp&quot;: {}
+    },
+    &quot;Tty&quot;: false,
+    &quot;OpenStdin&quot;: false,
+    &quot;StdinOnce&quot;: false,
+    &quot;Env&quot;: [
+      &quot;PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin&quot;,
+      &quot;NGINX_VERSION=1.19.0&quot;,
+      &quot;NJS_VERSION=0.4.1&quot;,
+      &quot;PKG_RELEASE=1~buster&quot;
+    ],
+    &quot;Cmd&quot;: [
+      &quot;nginx&quot;,
+      &quot;-g&quot;,
+      &quot;daemon off;&quot;
+    ],
+    &quot;ArgsEscaped&quot;: true,
+    &quot;Image&quot;: &quot;nginx&quot;,
+    &quot;Volumes&quot;: null,
+    &quot;WorkingDir&quot;: &quot;&quot;,
+    &quot;Entrypoint&quot;: [
+      &quot;/docker-entrypoint.sh&quot;
+    ],
+    &quot;OnBuild&quot;: null,
+    &quot;Labels&quot;: {
+      &quot;maintainer&quot;: &quot;NGINX Docker Maintainers &lt;docker-maint@nginx.com&gt;&quot;
+    },
+    &quot;StopSignal&quot;: &quot;SIGTERM&quot;
+  },
+  &quot;Image&quot;: &quot;sha256:4392e5dad77dbaf6a573650b0fe1e282b57c5fba6e6cea00a27c7d4b68539b81&quot;,
+  &quot;NetworkSettings&quot;: {
+    &quot;Bridge&quot;: &quot;&quot;,
+    &quot;SandboxID&quot;: &quot;603fbb30c2e591f9ccc4c21d7b7fc569abb377095d1bdcf7bb79ae7a5c5155c7&quot;,
+    &quot;HairpinMode&quot;: false,
+    &quot;LinkLocalIPv6Address&quot;: &quot;&quot;,
+    &quot;LinkLocalIPv6PrefixLen&quot;: 0,
+    &quot;Networks&quot;: {
+      &quot;bridge&quot;: {
+        &quot;IPAMConfig&quot;: null,
+        &quot;Links&quot;: null,
+        &quot;Aliases&quot;: null,
+        &quot;NetworkID&quot;: &quot;a8b4c847b9a1ee58ef02a801e84288b536e44030eed13c67566ab0f56585ae49&quot;,
+        &quot;EndpointID&quot;: &quot;9430a8eba0a7bdf871c921fc12d7dab52047e37b49207b6dbe2d7370c7a914e1&quot;,
+        &quot;Gateway&quot;: &quot;172.17.0.1&quot;,
+        &quot;IPAddress&quot;: &quot;172.17.0.2&quot;,
+        &quot;IPPrefixLen&quot;: 16,
+        &quot;IPv6Gateway&quot;: &quot;&quot;,
+        &quot;GlobalIPv6Address&quot;: &quot;&quot;,
+        &quot;GlobalIPv6PrefixLen&quot;: 0,
+        &quot;MacAddress&quot;: &quot;02:42:ac:11:00:02&quot;,
+        &quot;DriverOpts&quot;: null,
+        &quot;IPAMOperational&quot;: false
+      }
+    },
+    &quot;Service&quot;: null,
+    &quot;Ports&quot;: {
+      &quot;80/tcp&quot;: [
+        {
+          &quot;HostIp&quot;: &quot;0.0.0.0&quot;,
+          &quot;HostPort&quot;: &quot;32768&quot;
+        }
+      ]
+    },
+    &quot;SandboxKey&quot;: &quot;/var/run/docker/netns/603fbb30c2e5&quot;,
+    &quot;SecondaryIPAddresses&quot;: null,
+    &quot;SecondaryIPv6Addresses&quot;: null,
+    &quot;IsAnonymousEndpoint&quot;: true,
+    &quot;HasSwarmEndpoint&quot;: false
+  },
+  &quot;LogPath&quot;: &quot;/var/lib/docker/containers/79415509360edd0ddbb33ce05887a0b5633fed7da58d32c83536af8c04f72f28/79415509360edd0ddbb33ce05887a0b5633fed7da58d32c83536af8c04f72f28-json.log&quot;,
+  &quot;Name&quot;: &quot;/dazzling_goldberg&quot;,
+  &quot;Driver&quot;: &quot;overlay2&quot;,
+  &quot;OS&quot;: &quot;linux&quot;,
+  &quot;MountLabel&quot;: &quot;&quot;,
+  &quot;ProcessLabel&quot;: &quot;&quot;,
+  &quot;RestartCount&quot;: 0,
+  &quot;HasBeenStartedBefore&quot;: true,
+  &quot;HasBeenManuallyStopped&quot;: false,
+  &quot;MountPoints&quot;: {},
+  &quot;SecretReferences&quot;: null,
+  &quot;ConfigReferences&quot;: null,
+  &quot;AppArmorProfile&quot;: &quot;docker-default&quot;,
+  &quot;HostnamePath&quot;: &quot;/var/lib/docker/containers/79415509360edd0ddbb33ce05887a0b5633fed7da58d32c83536af8c04f72f28/hostname&quot;,
+  &quot;HostsPath&quot;: &quot;/var/lib/docker/containers/79415509360edd0ddbb33ce05887a0b5633fed7da58d32c83536af8c04f72f28/hosts&quot;,
+  &quot;ShmPath&quot;: &quot;/var/lib/docker/containers/79415509360edd0ddbb33ce05887a0b5633fed7da58d32c83536af8c04f72f28/mounts/shm&quot;,
+  &quot;ResolvConfPath&quot;: &quot;/var/lib/docker/containers/79415509360edd0ddbb33ce05887a0b5633fed7da58d32c83536af8c04f72f28/resolv.conf&quot;,
+  &quot;SeccompProfile&quot;: &quot;&quot;,
+  &quot;NoNewPrivileges&quot;: false
+}
+</code></pre><ul>
+<li>hostconfig.json: This file is mainly responsible for setting up the network interfaces,  bridge modes and
+dns, among other things  if you are running composer then this file would contain different settings, since we
+are using docker to run a simple container the file looks like this.</li>
+</ul>
+<pre><code>root@earth:/var/lib/docker/containers/79415509360edd0ddbb33ce05887a0b5633fed7da58d32c83536af8c04f72f28# cat hostconfig.json | jq
+{
+  &quot;Binds&quot;: null,
+  &quot;ContainerIDFile&quot;: &quot;&quot;,
+  &quot;LogConfig&quot;: {
+    &quot;Type&quot;: &quot;json-file&quot;,
+    &quot;Config&quot;: {}
+  },
+  &quot;NetworkMode&quot;: &quot;default&quot;,
+  &quot;PortBindings&quot;: {},
+  &quot;RestartPolicy&quot;: {
+    &quot;Name&quot;: &quot;no&quot;,
+    &quot;MaximumRetryCount&quot;: 0
+  },
+  &quot;AutoRemove&quot;: false,
+  &quot;VolumeDriver&quot;: &quot;&quot;,
+  &quot;VolumesFrom&quot;: null,
+  &quot;CapAdd&quot;: null,
+  &quot;CapDrop&quot;: null,
+  &quot;Dns&quot;: [],
+  &quot;DnsOptions&quot;: [],
+  &quot;DnsSearch&quot;: [],
+  &quot;ExtraHosts&quot;: null,
+  &quot;GroupAdd&quot;: null,
+  &quot;IpcMode&quot;: &quot;shareable&quot;,
+  &quot;Cgroup&quot;: &quot;&quot;,
+  &quot;Links&quot;: null,
+  &quot;OomScoreAdj&quot;: 0,
+  &quot;PidMode&quot;: &quot;&quot;,
+  &quot;Privileged&quot;: false,
+  &quot;PublishAllPorts&quot;: true,
+  &quot;ReadonlyRootfs&quot;: false,
+  &quot;SecurityOpt&quot;: null,
+  &quot;UTSMode&quot;: &quot;&quot;,
+  &quot;UsernsMode&quot;: &quot;&quot;,
+  &quot;ShmSize&quot;: 67108864,
+  &quot;Runtime&quot;: &quot;runc&quot;,
+  &quot;ConsoleSize&quot;: [
+    0,
+    0
+  ],
+  &quot;Isolation&quot;: &quot;&quot;,
+  &quot;CpuShares&quot;: 0,
+  &quot;Memory&quot;: 0,
+  &quot;NanoCpus&quot;: 0,
+  &quot;CgroupParent&quot;: &quot;&quot;,
+  &quot;BlkioWeight&quot;: 0,
+  &quot;BlkioWeightDevice&quot;: [],
+  &quot;BlkioDeviceReadBps&quot;: null,
+  &quot;BlkioDeviceWriteBps&quot;: null,
+  &quot;BlkioDeviceReadIOps&quot;: null,
+  &quot;BlkioDeviceWriteIOps&quot;: null,
+  &quot;CpuPeriod&quot;: 0,
+  &quot;CpuQuota&quot;: 0,
+  &quot;CpuRealtimePeriod&quot;: 0,
+  &quot;CpuRealtimeRuntime&quot;: 0,
+  &quot;CpusetCpus&quot;: &quot;&quot;,
+  &quot;CpusetMems&quot;: &quot;&quot;,
+  &quot;Devices&quot;: [],
+  &quot;DeviceCgroupRules&quot;: null,
+  &quot;DiskQuota&quot;: 0,
+  &quot;KernelMemory&quot;: 0,
+  &quot;MemoryReservation&quot;: 0,
+  &quot;MemorySwap&quot;: 0,
+  &quot;MemorySwappiness&quot;: null,
+  &quot;OomKillDisable&quot;: false,
+  &quot;PidsLimit&quot;: 0,
+  &quot;Ulimits&quot;: null,
+  &quot;CpuCount&quot;: 0,
+  &quot;CpuPercent&quot;: 0,
+  &quot;IOMaximumIOps&quot;: 0,
+  &quot;IOMaximumBandwidth&quot;: 0,
+  &quot;MaskedPaths&quot;: [
+    &quot;/proc/asound&quot;,
+    &quot;/proc/acpi&quot;,
+    &quot;/proc/kcore&quot;,
+    &quot;/proc/keys&quot;,
+    &quot;/proc/latency_stats&quot;,
+    &quot;/proc/timer_list&quot;,
+    &quot;/proc/timer_stats&quot;,
+    &quot;/proc/sched_debug&quot;,
+    &quot;/proc/scsi&quot;,
+    &quot;/sys/firmware&quot;
+  ],
+  &quot;ReadonlyPaths&quot;: [
+    &quot;/proc/bus&quot;,
+    &quot;/proc/fs&quot;,
+    &quot;/proc/irq&quot;,
+    &quot;/proc/sys&quot;,
+    &quot;/proc/sysrq-trigger&quot;
+  ]
+}
+</code></pre><ul>
+<li>hostname: Contains the hostname for the container.</li>
+</ul>
+<pre><code># Host machine
+$ cat /var/lib/docker/containers/79415509360edd0ddbb33ce05887a0b5633fed7da58d32c83536af8c04f72f28/hostname
+79415509360e
+</code></pre><pre><code># On the container 
+root@79415509360e $ cat /etc/hostname
+79415509360e
+</code></pre><ul>
+<li>resolv.conf: Contains the <code>resolv.conf</code> for the container, mounted at <code>/etc/resolv.conf</code></li>
+</ul>
+<pre><code>root@earth:/var/lib/docker/containers/79415509360edd0ddbb33ce05887a0b5633fed7da58d32c83536af8c04f72f28# cat /var/lib/docker/containers/79415509360edd0ddbb33ce05887a0b5633fed7da58d32c83536af8c04f72f28/resolv.conf
+# This file is managed by man:systemd-resolved(8). Do not edit.
+#
+# This is a dynamic resolv.conf file for connecting local clients directly to
+# all known uplink DNS servers. This file lists all configured search domains.
+#
+# Third party programs must not access this file directly, but only through the
+# symlink at /etc/resolv.conf. To manage man:resolv.conf(5) in a different way,
+# replace this symlink by a static file or a different symlink.
+#
+# See man:systemd-resolved.service(8) for details about the supported modes of
+# operation for /etc/resolv.conf.
+
+nameserver 192.168.1.7
+nameserver 1.1.1.1
+nameserver 8.8.8.8
+search localdomain
+</code></pre><pre><code>root@79415509360e:~# cat /etc/resolv.conf
+# This file is managed by man:systemd-resolved(8). Do not edit.
+#
+# This is a dynamic resolv.conf file for connecting local clients directly to
+# all known uplink DNS servers. This file lists all configured search domains.
+#
+# Third party programs must not access this file directly, but only through the
+# symlink at /etc/resolv.conf. To manage man:resolv.conf(5) in a different way,
+# replace this symlink by a static file or a different symlink.
+#
+# See man:systemd-resolved.service(8) for details about the supported modes of
+# operation for /etc/resolv.conf.
+
+nameserver 192.168.1.7
+nameserver 1.1.1.1
+nameserver 8.8.8.8
+search localdomain
+
+</code></pre><ul>
+<li>resolv.conf.hash: Just a file that holds the sha-256 check sum for the previously mentioned resolv.conf file</li>
+</ul>
+<pre><code>$ cat /var/lib/docker/containers/79415509360edd0ddbb33ce05887a0b5633fed7da58d32c83536af8c04f72f28/resolv.conf.hash
+sha256:4b2f8601ebbea68e34b4218913bd52e6acb9e816a7024e6ff9e4ed3ecf71b878
+</code></pre><pre><code>shasum -a 256 resolv.conf
+4b2f8601ebbea68e34b4218913bd52e6acb9e816a7024e6ff9e4ed3ecf71b878  resolv.conf
+</code></pre><h2 id="docker-filesystem-and-files">Docker Filesystem and Files</h2>
+<p>We know that there are some files from <code>/var/lib/docker/containers/${CONTAINER_ID}</code> that are mounted
+automatically as part of the startup process, most notably <code>hostname</code> and <code>resolv.conf</code> but what about the
+rest of the filesystem? For that we need to look in <code>docker inspect</code>.</p>
+<pre><code>$ docker inspect 79415509360e
+
+[
+    {
+        &quot;Id&quot;: &quot;79415509360edd0ddbb33ce05887a0b5633fed7da58d32c83536af8c04f72f28&quot;,
+        &quot;Created&quot;: &quot;2020-06-29T00:47:26.622421221Z&quot;,
+        &quot;Path&quot;: &quot;/docker-entrypoint.sh&quot;,
+        &quot;Args&quot;: [
+            &quot;nginx&quot;,
+            &quot;-g&quot;,
+            &quot;daemon off;&quot;
+        ],
+        &quot;State&quot;: {
+            &quot;Status&quot;: &quot;running&quot;,
+            &quot;Running&quot;: true,
+            &quot;Paused&quot;: false,
+            &quot;Restarting&quot;: false,
+            &quot;OOMKilled&quot;: false,
+            &quot;Dead&quot;: false,
+            &quot;Pid&quot;: 11756,
+            &quot;ExitCode&quot;: 0,
+            &quot;Error&quot;: &quot;&quot;,
+            &quot;StartedAt&quot;: &quot;2020-06-29T00:47:27.064480116Z&quot;,
+            &quot;FinishedAt&quot;: &quot;0001-01-01T00:00:00Z&quot;
+        },
+        &quot;Image&quot;: &quot;sha256:4392e5dad77dbaf6a573650b0fe1e282b57c5fba6e6cea00a27c7d4b68539b81&quot;,
+        &quot;ResolvConfPath&quot;: &quot;/var/lib/docker/containers/79415509360edd0ddbb33ce05887a0b5633fed7da58d32c83536af8c04f72f28/resolv.conf&quot;,
+        &quot;HostnamePath&quot;: &quot;/var/lib/docker/containers/79415509360edd0ddbb33ce05887a0b5633fed7da58d32c83536af8c04f72f28/hostname&quot;,
+        &quot;HostsPath&quot;: &quot;/var/lib/docker/containers/79415509360edd0ddbb33ce05887a0b5633fed7da58d32c83536af8c04f72f28/hosts&quot;,
+        &quot;LogPath&quot;: &quot;/var/lib/docker/containers/79415509360edd0ddbb33ce05887a0b5633fed7da58d32c83536af8c04f72f28/79415509360edd0ddbb33ce05887a0b5633fed7da58d32c83536af8c04f72f28-json.log&quot;,
+        &quot;Name&quot;: &quot;/dazzling_goldberg&quot;,
+        &quot;RestartCount&quot;: 0,
+        &quot;Driver&quot;: &quot;overlay2&quot;,
+        &quot;Platform&quot;: &quot;linux&quot;,
+        &quot;MountLabel&quot;: &quot;&quot;,
+        &quot;ProcessLabel&quot;: &quot;&quot;,
+        &quot;AppArmorProfile&quot;: &quot;docker-default&quot;,
+        &quot;ExecIDs&quot;: [
+            &quot;2aabd28bfd6a8b19e9190809a33ecfaa90473980f63ce417903cc6679513af22&quot;
+        ],
+        &quot;HostConfig&quot;: {
+            &quot;Binds&quot;: null,
+            &quot;ContainerIDFile&quot;: &quot;&quot;,
+            &quot;LogConfig&quot;: {
+                &quot;Type&quot;: &quot;json-file&quot;,
+                &quot;Config&quot;: {}
+            },
+            &quot;NetworkMode&quot;: &quot;default&quot;,
+            &quot;PortBindings&quot;: {},
+            &quot;RestartPolicy&quot;: {
+                &quot;Name&quot;: &quot;no&quot;,
+                &quot;MaximumRetryCount&quot;: 0
+            },
+            &quot;AutoRemove&quot;: false,
+            &quot;VolumeDriver&quot;: &quot;&quot;,
+            &quot;VolumesFrom&quot;: null,
+            &quot;CapAdd&quot;: null,
+            &quot;CapDrop&quot;: null,
+            &quot;Dns&quot;: [],
+            &quot;DnsOptions&quot;: [],
+            &quot;DnsSearch&quot;: [],
+            &quot;ExtraHosts&quot;: null,
+            &quot;GroupAdd&quot;: null,
+            &quot;IpcMode&quot;: &quot;shareable&quot;,
+            &quot;Cgroup&quot;: &quot;&quot;,
+            &quot;Links&quot;: null,
+            &quot;OomScoreAdj&quot;: 0,
+            &quot;PidMode&quot;: &quot;&quot;,
+            &quot;Privileged&quot;: false,
+            &quot;PublishAllPorts&quot;: true,
+            &quot;ReadonlyRootfs&quot;: false,
+            &quot;SecurityOpt&quot;: null,
+            &quot;UTSMode&quot;: &quot;&quot;,
+            &quot;UsernsMode&quot;: &quot;&quot;,
+            &quot;ShmSize&quot;: 67108864,
+            &quot;Runtime&quot;: &quot;runc&quot;,
+            &quot;ConsoleSize&quot;: [
+                0,
+                0
+            ],
+            &quot;Isolation&quot;: &quot;&quot;,
+            &quot;CpuShares&quot;: 0,
+            &quot;Memory&quot;: 0,
+            &quot;NanoCpus&quot;: 0,
+            &quot;CgroupParent&quot;: &quot;&quot;,
+            &quot;BlkioWeight&quot;: 0,
+            &quot;BlkioWeightDevice&quot;: [],
+            &quot;BlkioDeviceReadBps&quot;: null,
+            &quot;BlkioDeviceWriteBps&quot;: null,
+            &quot;BlkioDeviceReadIOps&quot;: null,
+            &quot;BlkioDeviceWriteIOps&quot;: null,
+            &quot;CpuPeriod&quot;: 0,
+            &quot;CpuQuota&quot;: 0,
+            &quot;CpuRealtimePeriod&quot;: 0,
+            &quot;CpuRealtimeRuntime&quot;: 0,
+            &quot;CpusetCpus&quot;: &quot;&quot;,
+            &quot;CpusetMems&quot;: &quot;&quot;,
+            &quot;Devices&quot;: [],
+            &quot;DeviceCgroupRules&quot;: null,
+            &quot;DiskQuota&quot;: 0,
+            &quot;KernelMemory&quot;: 0,
+            &quot;MemoryReservation&quot;: 0,
+            &quot;MemorySwap&quot;: 0,
+            &quot;MemorySwappiness&quot;: null,
+            &quot;OomKillDisable&quot;: false,
+            &quot;PidsLimit&quot;: 0,
+            &quot;Ulimits&quot;: null,
+            &quot;CpuCount&quot;: 0,
+            &quot;CpuPercent&quot;: 0,
+            &quot;IOMaximumIOps&quot;: 0,
+            &quot;IOMaximumBandwidth&quot;: 0,
+            &quot;MaskedPaths&quot;: [
+                &quot;/proc/asound&quot;,
+                &quot;/proc/acpi&quot;,
+                &quot;/proc/kcore&quot;,
+                &quot;/proc/keys&quot;,
+                &quot;/proc/latency_stats&quot;,
+                &quot;/proc/timer_list&quot;,
+                &quot;/proc/timer_stats&quot;,
+                &quot;/proc/sched_debug&quot;,
+                &quot;/proc/scsi&quot;,
+                &quot;/sys/firmware&quot;
+            ],
+            &quot;ReadonlyPaths&quot;: [
+                &quot;/proc/bus&quot;,
+                &quot;/proc/fs&quot;,
+                &quot;/proc/irq&quot;,
+                &quot;/proc/sys&quot;,
+                &quot;/proc/sysrq-trigger&quot;
+            ]
+        },
+        &quot;GraphDriver&quot;: {
+            &quot;Data&quot;: {
+                &quot;LowerDir&quot;: &quot;/var/lib/docker/overlay2/a125ed1c07acbc7873e2bcb2e05b0536dd8e2d86b24bf35116a3435fe6659bf2-init/diff:/var/lib/docker/overlay2/df0cfc3535d26b05d11e44e4398f99bf39a920615c5810f1690faaae120826e9/diff:/var/lib/docker/overlay2/bc9429ad6ede34e6704739f342a5c4f2400e02744d5f85e11084866ed636069c/diff:/var/lib/docker/overlay2/092a847640b36f15c2e9103767cb06d8d04e7be675dbef4d0f3ee81d019b71d4/diff:/var/lib/docker/overlay2/bbf65ed8358dec49eafff808a9e61ebdb5edb8a592238e81045a4f79daeb1cd6/diff:/var/lib/docker/overlay2/fe33dfe667d8a4d39e6fcdccdfa1fe3681d84140f4fd9b6dbe0e8195446dee69/diff&quot;,
+                &quot;MergedDir&quot;: &quot;/var/lib/docker/overlay2/a125ed1c07acbc7873e2bcb2e05b0536dd8e2d86b24bf35116a3435fe6659bf2/merged&quot;,
+                &quot;UpperDir&quot;: &quot;/var/lib/docker/overlay2/a125ed1c07acbc7873e2bcb2e05b0536dd8e2d86b24bf35116a3435fe6659bf2/diff&quot;,
+                &quot;WorkDir&quot;: &quot;/var/lib/docker/overlay2/a125ed1c07acbc7873e2bcb2e05b0536dd8e2d86b24bf35116a3435fe6659bf2/work&quot;
+            },
+            &quot;Name&quot;: &quot;overlay2&quot;
+        },
+        &quot;Mounts&quot;: [],
+        &quot;Config&quot;: {
+            &quot;Hostname&quot;: &quot;79415509360e&quot;,
+            &quot;Domainname&quot;: &quot;&quot;,
+            &quot;User&quot;: &quot;&quot;,
+            &quot;AttachStdin&quot;: false,
+            &quot;AttachStdout&quot;: false,
+            &quot;AttachStderr&quot;: false,
+            &quot;ExposedPorts&quot;: {
+                &quot;80/tcp&quot;: {}
+            },
+            &quot;Tty&quot;: false,
+            &quot;OpenStdin&quot;: false,
+            &quot;StdinOnce&quot;: false,
+            &quot;Env&quot;: [
+                &quot;PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin&quot;,
+                &quot;NGINX_VERSION=1.19.0&quot;,
+                &quot;NJS_VERSION=0.4.1&quot;,
+                &quot;PKG_RELEASE=1~buster&quot;
+            ],
+            &quot;Cmd&quot;: [
+                &quot;nginx&quot;,
+                &quot;-g&quot;,
+                &quot;daemon off;&quot;
+            ],
+            &quot;ArgsEscaped&quot;: true,
+            &quot;Image&quot;: &quot;nginx&quot;,
+            &quot;Volumes&quot;: null,
+            &quot;WorkingDir&quot;: &quot;&quot;,
+            &quot;Entrypoint&quot;: [
+                &quot;/docker-entrypoint.sh&quot;
+            ],
+            &quot;OnBuild&quot;: null,
+            &quot;Labels&quot;: {
+                &quot;maintainer&quot;: &quot;NGINX Docker Maintainers &lt;docker-maint@nginx.com&gt;&quot;
+            },
+            &quot;StopSignal&quot;: &quot;SIGTERM&quot;
+        },
+        &quot;NetworkSettings&quot;: {
+            &quot;Bridge&quot;: &quot;&quot;,
+            &quot;SandboxID&quot;: &quot;603fbb30c2e591f9ccc4c21d7b7fc569abb377095d1bdcf7bb79ae7a5c5155c7&quot;,
+            &quot;HairpinMode&quot;: false,
+            &quot;LinkLocalIPv6Address&quot;: &quot;&quot;,
+            &quot;LinkLocalIPv6PrefixLen&quot;: 0,
+            &quot;Ports&quot;: {
+                &quot;80/tcp&quot;: [
+                    {
+                        &quot;HostIp&quot;: &quot;0.0.0.0&quot;,
+                        &quot;HostPort&quot;: &quot;32768&quot;
+                    }
+                ]
+            },
+            &quot;SandboxKey&quot;: &quot;/var/run/docker/netns/603fbb30c2e5&quot;,
+            &quot;SecondaryIPAddresses&quot;: null,
+            &quot;SecondaryIPv6Addresses&quot;: null,
+            &quot;EndpointID&quot;: &quot;9430a8eba0a7bdf871c921fc12d7dab52047e37b49207b6dbe2d7370c7a914e1&quot;,
+            &quot;Gateway&quot;: &quot;172.17.0.1&quot;,
+            &quot;GlobalIPv6Address&quot;: &quot;&quot;,
+            &quot;GlobalIPv6PrefixLen&quot;: 0,
+            &quot;IPAddress&quot;: &quot;172.17.0.2&quot;,
+            &quot;IPPrefixLen&quot;: 16,
+            &quot;IPv6Gateway&quot;: &quot;&quot;,
+            &quot;MacAddress&quot;: &quot;02:42:ac:11:00:02&quot;,
+            &quot;Networks&quot;: {
+                &quot;bridge&quot;: {
+                    &quot;IPAMConfig&quot;: null,
+                    &quot;Links&quot;: null,
+                    &quot;Aliases&quot;: null,
+                    &quot;NetworkID&quot;: &quot;a8b4c847b9a1ee58ef02a801e84288b536e44030eed13c67566ab0f56585ae49&quot;,
+                    &quot;EndpointID&quot;: &quot;9430a8eba0a7bdf871c921fc12d7dab52047e37b49207b6dbe2d7370c7a914e1&quot;,
+                    &quot;Gateway&quot;: &quot;172.17.0.1&quot;,
+                    &quot;IPAddress&quot;: &quot;172.17.0.2&quot;,
+                    &quot;IPPrefixLen&quot;: 16,
+                    &quot;IPv6Gateway&quot;: &quot;&quot;,
+                    &quot;GlobalIPv6Address&quot;: &quot;&quot;,
+                    &quot;GlobalIPv6PrefixLen&quot;: 0,
+                    &quot;MacAddress&quot;: &quot;02:42:ac:11:00:02&quot;,
+                    &quot;DriverOpts&quot;: null
+                }
+            }
+        }
+    }
+]
+</code></pre><p>We can see that the files mentioned previously are mounted by virtue of docker.</p>
+<pre><code>&quot;ResolvConfPath&quot;: &quot;/var/lib/docker/containers/79415509360edd0ddbb33ce05887a0b5633fed7da58d32c83536af8c04f72f28/resolv.conf&quot;,
+&quot;HostnamePath&quot;: &quot;/var/lib/docker/containers/79415509360edd0ddbb33ce05887a0b5633fed7da58d32c83536af8c04f72f28/hostname&quot;,
+&quot;HostsPath&quot;: &quot;/var/lib/docker/containers/79415509360edd0ddbb33ce05887a0b5633fed7da58d32c83536af8c04f72f28/hosts&quot;,
+&quot;LogPath&quot;: &quot;/var/lib/docker/containers/79415509360edd0ddbb33ce05887a0b5633fed7da58d32c83536af8c04f72f28/79415509360edd0ddbb33ce05887a0b5633fed7da58d32c83536af8c04f72f28-json.log&quot;,
+
+</code></pre><p>We can also see that the filesystem driver is shown here.</p>
+<pre><code>&quot;Driver&quot;: &quot;overlay2&quot;,
+
+</code></pre><p>Also there are references to some <code>/proc/</code> directories that are either masked or marked as read-only, these
+attributes are also referenced in <code>hostconfig.json</code></p>
+<pre><code>&quot;MaskedPaths&quot;: [
+    &quot;/proc/asound&quot;,
+    &quot;/proc/acpi&quot;,
+    &quot;/proc/kcore&quot;,
+    &quot;/proc/keys&quot;,
+    &quot;/proc/latency_stats&quot;,
+    &quot;/proc/timer_list&quot;,
+    &quot;/proc/timer_stats&quot;,
+    &quot;/proc/sched_debug&quot;,
+    &quot;/proc/scsi&quot;,
+    &quot;/sys/firmware&quot;
+],
+&quot;ReadonlyPaths&quot;: [
+    &quot;/proc/bus&quot;,
+    &quot;/proc/fs&quot;,
+    &quot;/proc/irq&quot;,
+    &quot;/proc/sys&quot;,
+    &quot;/proc/sysrq-trigger&quot;
+]
+
+</code></pre><p>Finally there seems to be some reference to the overlay filesystem through some attribute called GraphDriver.</p>
+<pre><code>&quot;GraphDriver&quot;: {
+    &quot;Data&quot;: {
+        &quot;LowerDir&quot;: &quot;/var/lib/docker/overlay2/a125ed1c07acbc7873e2bcb2e05b0536dd8e2d86b24bf35116a3435fe6659bf2-init/diff:/var/lib/docker/overlay2/df0cfc3535d26b05d11e44e4398f99bf39a920615c5810f1690faaae120826e9/diff:/var/lib/docker/overlay2/bc9429ad6ede34e6704739f342a5c4f2400e02744d5f85e11084866ed636069c/diff:/var/lib/docker/overlay2/092a847640b36f15c2e9103767cb06d8d04e7be675dbef4d0f3ee81d019b71d4/diff:/var/lib/docker/overlay2/bbf65ed8358dec49eafff808a9e61ebdb5edb8a592238e81045a4f79daeb1cd6/diff:/var/lib/docker/overlay2/fe33dfe667d8a4d39e6fcdccdfa1fe3681d84140f4fd9b6dbe0e8195446dee69/diff&quot;,
+        &quot;MergedDir&quot;: &quot;/var/lib/docker/overlay2/a125ed1c07acbc7873e2bcb2e05b0536dd8e2d86b24bf35116a3435fe6659bf2/merged&quot;,
+        &quot;UpperDir&quot;: &quot;/var/lib/docker/overlay2/a125ed1c07acbc7873e2bcb2e05b0536dd8e2d86b24bf35116a3435fe6659bf2/diff&quot;,
+        &quot;WorkDir&quot;: &quot;/var/lib/docker/overlay2/a125ed1c07acbc7873e2bcb2e05b0536dd8e2d86b24bf35116a3435fe6659bf2/work&quot;
+    },
+    &quot;Name&quot;: &quot;overlay2&quot;
+},
+
+</code></pre><p>This is interesting since the id in the overlay2 directory is not the same as the container ID that I&rsquo;ve been
+previously working with. I&rsquo;ll call this overlay ID with value
+<code>a125ed1c07acbc7873e2bcb2e05b0536dd8e2d86b24bf35116a3435fe6659bf2</code>. The contents of this directory are:</p>
+<pre><code>
+root@earth:~# ls -al /var/lib/docker/overlay2/a125ed1c07acbc7873e2bcb2e05b0536dd8e2d86b24bf35116a3435fe6659bf2
+total 56
+drwx------   5 root root  4096  .
+drwx------ 215 root root 28672  ..
+drwxr-xr-x   6 root root  4096  diff
+-rw-r--r--   1 root root    26  link
+-rw-r--r--   1 root root   173  lower
+drwxr-xr-x   1 root root  4096  merged
+drwx------   3 root root  4096  work
+</code></pre><p>Doing a tree of the directory shows us the complete filesystem for the container.</p>
+<pre><code>$ tree  /var/lib/docker/overlay2/a125ed1c07acbc7873e2bcb2e05b0536dd8e2d86b24bf35116a3435fe6659bf2 -d -L 2
+/var/lib/docker/overlay2/a125ed1c07acbc7873e2bcb2e05b0536dd8e2d86b24bf35116a3435fe6659bf2
+├── diff
+│   ├── etc
+│   ├── root
+│   ├── run
+│   └── var
+├── merged
+│   ├── bin
+│   ├── boot
+│   ├── dev
+│   ├── docker-entrypoint.d
+│   ├── etc
+│   ├── home
+│   ├── lib
+│   ├── lib64
+│   ├── media
+│   ├── mnt
+│   ├── opt
+│   ├── proc
+│   ├── root
+│   ├── run
+│   ├── sbin
+│   ├── srv
+│   ├── sys
+│   ├── tmp
+│   ├── usr
+│   └── var
+└── work
+    └── work
+
+</code></pre><p>The work directory is empty, only used by OverlayFS internal mechanics  so it&rsquo;s irrelevant for now. The
+<code>lower</code> file seems related to the layering of previous images, checking the file yeilds.</p>
+<pre><code>$ cat lower
+l/7WPZKXJV2SBCQBE57LVAP4OUIE:l/ON3TWDAENYU5UIS7SW5QWGW6F3:l/W5ZIQ33SFPQXS4WV3LHDGAIEVC:l/QJMVZIUNLOO3E6QS5EX4L4ZTAS:l/6FB65JHRJYH2FMWHZZ2LF2QMUT:l/O46JWE6HPO5PKFWKVEDKCDA66Xroot@earth:/var/lib/docker/overlay2/a125ed1c07acbc7873e2bcb2e05b0536dd8e2d86b24bf35116a3435fe6659bf2# vim lower
+</code></pre><p>A <code>;</code> separated list of values, formatting this to be prettier:</p>
+<pre><code>l/7WPZKXJV2SBCQBE57LVAP4OUIE
+l/ON3TWDAENYU5UIS7SW5QWGW6F3
+l/W5ZIQ33SFPQXS4WV3LHDGAIEVC
+l/QJMVZIUNLOO3E6QS5EX4L4ZTAS
+l/6FB65JHRJYH2FMWHZZ2LF2QMUT
+l/O46JWE6HPO5PKFWKVEDKCDA66X
+</code></pre><p>Running a list directory on the contents of <code>l</code> directories.</p>
+<pre><code>$ ls ../l/7WPZKXJV2SBCQBE57LVAP4OUIE
+dev  etc
+
+$ ls ../l/ON3TWDAENYU5UIS7SW5QWGW6F3
+docker-entrypoint.d
+
+$ ls ../l/W5ZIQ33SFPQXS4WV3LHDGAIEVC
+docker-entrypoint.d
+
+$ ls ../l/QJMVZIUNLOO3E6QS5EX4L4ZTAS
+docker-entrypoint.sh
+
+$ ls ../l/6FB65JHRJYH2FMWHZZ2LF2QMUT
+docker-entrypoint.d  etc  lib  tmp  usr  var
+
+$ ls ../l/O46JWE6HPO5PKFWKVEDKCDA66X
+bin  boot  dev  etc  home  lib  lib64  media  mnt  opt  proc  root  run  sbin  srv  sys  tmp  usr  var
+
+</code></pre><p>These seem to be the files that where modified by different layers as the image was being built by a <code>docker build</code> command. Starting at the base image which holds all the root file system directories and each layer
+modified certain files and directories.</p>
+<p>Moving on, the <code>diff</code> and <code>merged</code> directories are interesting.
+Let&rsquo;s test this, by creating a file on the container and see if it shows up here.</p>
+<pre><code>root@79415509360e:~# echo &quot;HELLLOOO FROM THE CONTAINER&quot; &gt; helloworld.txt
+root@79415509360e:~# cat helloworld.txt
+
+</code></pre><p>Then list the contents of the directory on the host machine.</p>
+<pre><code>root@earth:/var/lib/docker/overlay2/a125ed1c07acbc7873e2bcb2e05b0536dd8e2d86b24bf35116a3435fe6659bf2# tree diff -L 4
+diff
+├── etc
+│   └── nginx
+│       └── conf.d
+│           └── default.conf
+├── root
+│   └── helloworld.txt
+├── run
+│   └── nginx.pid
+└── var
+    └── cache
+        └── nginx
+            ├── client_temp
+            ├── fastcgi_temp
+            ├── proxy_temp
+            ├── scgi_temp
+            └── uwsgi_temp
+
+</code></pre><pre><code>$ cat diff/root/helloworld.txt
+HELLLOOO FROM THE CONTAINER
+
+</code></pre><pre><code>cat merged/root/helloworld.txt
+HELLLOOO FROM THE CONTAINER
+
+</code></pre><p>So this is it! this diff directory holds the container data. But so does the merged directory. To understand
+this, a quick look at the documentation [<a href="https://docs.docker.com/storage/storagedriver/overlayfs-driver/" title="Docker Overlay2">3</a>].</p>
+<pre><code>OverlayFS layers two directories on a single Linux host and presents them as a single directory.  These directories are called layers and the unification process is referred to as a union mount.
+OverlayFS refers to the lower directory as lowerdir and the upper directory a upperdir. The unified view is exposed through its own directory called merged.
+</code></pre><p>So the <code>merged</code> directory is the unified filesystem that is on the container, the <code>link</code> file is used as a
+refernce to a layer by symbolic links in the <code>l</code> directory, this can be verified by running:</p>
+<pre><code>$ ls -all ../l/ | grep 7DE4KVX7BSNFR2KAQ7BJ3SDU73
+lrwxrwxrwx   1 root root    72 jun 28 20:47 7DE4KVX7BSNFR2KAQ7BJ3SDU73 -&gt; ../a125ed1c07acbc7873e2bcb2e05b0536dd8e2d86b24bf35116a3435fe6659bf2/diff
+</code></pre><p>So its basically a symbolic link to another directory, this is done to avoid name length when executing the
+<code>mount</code> command to mount the filesystem.</p>
+<p>The <code>diff</code> directory contains the difference in the layer with respect to the base.</p>
+<p>Checking the actual running system we can see that all of this makes sense.</p>
+<pre><code>$ df -Tih
+Filesystem     Type     Inodes IUsed IFree IUse% Mounted on
+udev           devtmpfs   2,0M   591  2,0M    1% /dev
+tmpfs          tmpfs      2,0M  1,1K  2,0M    1% /run
+/dev/nvme0n1p2 ext4        30M  1,4M   29M    5% /
+tmpfs          tmpfs      2,0M   461  2,0M    1% /dev/shm
+tmpfs          tmpfs      2,0M     6  2,0M    1% /run/lock
+tmpfs          tmpfs      2,0M    18  2,0M    1% /sys/fs/cgroup
+/dev/nvme0n1p1 vfat          0     0     0     - /boot/efi
+tmpfs          tmpfs      2,0M    33  2,0M    1% /run/user/1000
+overlay        overlay     30M  1,4M   29M    5% /var/lib/docker/overlay2/a125ed1c07acbc7873e2bcb2e05b0536dd8e2d86b24bf35116a3435fe6659bf2/merged
+shm            tmpfs      2,0M     1  2,0M    1% /var/lib/docker/containers/79415509360edd0ddbb33ce05887a0b5633fed7da58d32c83536af8c04f72f28/mounts/shm
+
+</code></pre><p>Viewing the overlay filesystem we can see that <code>merged</code> directory gets mounted, as well as the <code>shm</code>
+directory. A quick thing to note is that the <code>-i</code> opton shows the inodes on the mounted filesystem, both the
+overlay and the host filesystem share the same amount of free inodes at <code>29845461</code> or <code>29M</code>.</p>
+<p>Comparing against the container filesystem.</p>
+<pre><code>root@79415509360e:~# df -Tih
+Filesystem     Type    Inodes IUsed IFree IUse% Mounted on
+overlay        overlay    30M  1.4M   29M    5% /
+tmpfs          tmpfs     2.0M    16  2.0M    1% /dev
+tmpfs          tmpfs     2.0M    17  2.0M    1% /sys/fs/cgroup
+/dev/nvme0n1p2 ext4       30M  1.4M   29M    5% /etc/hosts
+shm            tmpfs     2.0M     1  2.0M    1% /dev/shm
+tmpfs          tmpfs     2.0M     1  2.0M    1% /proc/asound
+tmpfs          tmpfs     2.0M     1  2.0M    1% /proc/acpi
+tmpfs          tmpfs     2.0M     1  2.0M    1% /proc/scsi
+tmpfs          tmpfs     2.0M     1  2.0M    1% /sys/firmware
+</code></pre><p>So to summarize, the host machine is mounted at <code>/</code> with filesystem of <code>ext4</code> and the container is mounted <code>/</code>
+with filesystem of <code>overlay</code>, the refernces to <code>overlay2</code> are not of filesystem but it regards to the driver
+docker is using to mount the filesystem. We also see that the <code>/proc/asound</code>, <code>/proc/acpi</code>, <code>/proc/scsi</code>,
+<code>/sys/firmware</code> are mounted as tmpfs in memory but where also listed in <code>MaskedPaths</code> in the <code>docker inspect</code>
+command.</p>
+<h1 id="references">References</h1>
+<p>1: <a href="http://alexander.holbreich.org/docker-components-explained/">http://alexander.holbreich.org/docker-components-explained/</a>  &ldquo;Docker Components&rdquo;</p>
+<p>2: <a href="https://github.com/opencontainers/runtime-spec">https://github.com/opencontainers/runtime-spec</a>               &ldquo;OCI-Runtime-Spec&rdquo;</p>
+<p>3: <a href="https://docs.docker.com/storage/storagedriver/overlayfs-driver/">https://docs.docker.com/storage/storagedriver/overlayfs-driver/</a> &ldquo;Docker Overlay2&rdquo;</p>
+<p>4: <a href="https://windsock.io/the-docker-proxy/">https://windsock.io/the-docker-proxy/</a> &ldquo;Docker Proxy&rdquo;</p>
+</div>
+
+</main>
+
+        <footer>
+            <p class="copyright text-muted">© All rights reserved. Powered by <a href="https://gohugo.io">Hugo</a> and <a href="https://github.com/calintat/minimal">Minimal</a>.</p>
+        </footer>
+
+        
+
+        
+    </body>
+
+</html>
+

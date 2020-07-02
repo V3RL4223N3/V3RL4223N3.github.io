@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>containerd on Cloudware</title>
+    <link>/tags/containerd/</link>
+    <description>Recent content in containerd on Cloudware</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    
+	<atom:link href="/tags/containerd/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Docker In-Depth</title>
+      <link>/projects/docker-internal-analysis/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>/projects/docker-internal-analysis/</guid>
+      <description>Setup  Ubuntu 18.04 Docker version 18.09.7, build 2d0083d containerd 1.2.6-0ubuntu1~18.04.2 runc version spec: 1.0.1-dev kervenl version: 5.3.0-61-generic  Introduction Internals There are no such things as containers, Docker is only leveraging kernel feature called a namespace through different programs to give the illusion of container construct. Each namespace isolates a different dimension of the container and can be shared to other containers.
+Namespaces There are 5 namespaces involved in the container creation process</description>
+    </item>
+    
+  </channel>
+</rss>
